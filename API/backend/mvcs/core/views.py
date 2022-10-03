@@ -1,20 +1,60 @@
-from gc import get_objects
 import os, shutil, subprocess
 from django.http import Http404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import User, Repository, Commit, Branch
-from .serializers import UserSerializer, CommitSerializer, RepositorySerializer, BranchSerializer
+from .serializers import UserSerializer, CommitSerializer,\
+     RepositorySerializer, BranchSerializer, RegistrationSerializer, PasswordChangeSerializer
+from django.contrib.auth import authenticate, login, logout
+from rest_framework.permissions import IsAuthenticated
+from .utils import get_tokens_for_user
+from rest_framework.parsers import JSONParser
 
-def createDirectory(path, dir_name):
-    subprocess.run(["mkdir", path + dir_name + '/'])
 
-def renameDirectory(path, dir_name, new_name):
-    subprocess.run(["mv", path + dir_name + '/', path + new_name+ '/'])
+# Authentication views
+class RegistrationView(APIView):
+    def post(self, request):
+        serializer = RegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            path = os.path.join("/var/mvcs/", serializer.validated_data['username'] + '/')
+            os.mkdir(path)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-def deleteDirectory(path):
-    shutil.rmtree(path)
+class LoginView(APIView):
+    parser_classes = [JSONParser]
+    def post(self, request):
+        print(request.data)
+        if 'email' not in request.data or 'password' not in request.data:
+            return Response({'msg': 'Credentials missing'}, status=status.HTTP_400_BAD_REQUEST)
+
+        email = request.data.get('email', False)
+        password = request.data.get('password', 'ERROR')
+        print(email, password)
+        user = authenticate(request, email=email, password=password)
+        print(user)
+        if user is not None:
+            login(request, user)
+            auth_data = get_tokens_for_user(request.user)
+            return Response({'msg': 'Login Success', **auth_data}, status=status.HTTP_200_OK)
+        return Response({'msg': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
+class LogoutView(APIView):
+    def post(self, request):
+        logout(request)
+        return Response({'msg': 'Successfully Logged out'}, status=status.HTTP_200_OK)
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated, ]
+
+    def post(self, request):
+        serializer = PasswordChangeSerializer(context={'request': request}, data=request.data)
+        serializer.is_valid(raise_exception=True) 
+        request.user.set_password(serializer.validated_data['new_password'])
+        request.user.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 # User views handling
 class UserList(APIView):
@@ -26,14 +66,6 @@ class UserList(APIView):
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
 
-    def post(self, request, format=None):
-        users = UserSerializer(data=request.data)
-        if users.is_valid():
-            users.save()
-            createDirectory("/var/mvcs/", users.data['username'])
-            return Response(users.data, status=status.HTTP_201_CREATED)
-        return Response(users.errors, status=status.HTTP_400_BAD_REQUEST)
-
 class UserDetail(APIView):
     """
     Retrieve, update or delete a user instance.
@@ -44,6 +76,9 @@ class UserDetail(APIView):
         except User.DoesNotExist:
             raise Http404
 
+    def renameDirectory(self, path, dir_name, new_name):
+        subprocess.run(["mv", path + dir_name + '/', path + new_name+ '/'])
+
     def get(self, request, pk, format=None):
         user = self.get_object(pk)
         serializer = UserSerializer(user)
@@ -53,7 +88,7 @@ class UserDetail(APIView):
         user = self.get_object(pk)
         serializer = UserSerializer(user, data=request.data)
         if serializer.is_valid():
-            renameDirectory('/var/mvcs/', user.username, serializer.validated_data['username'])
+            self. renameDirectory('/var/mvcs/', user.username, serializer.validated_data['username'])
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
