@@ -82,15 +82,15 @@ TEMPLATES = [
 WSGI_APPLICATION = 'mvcs.wsgi.application'
 
 
-# Database
+# Database / mysql + mysql-client
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',  
         'NAME': 'mvcs',  
-        'USER': 'django',  
-        'PASSWORD': 'django-user-password',  
+        'USER': 'root',  
+        'PASSWORD': 'password',  
         'HOST': '127.0.0.1',  
         'PORT': '3306',
         'OPTIONS': {  

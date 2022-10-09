@@ -1,4 +1,8 @@
+# sudo apt-get install python3-dev default-libmysqlclient-dev build-essential
 djangorestframework
 pyyaml
 requests
 django-cors-headers
+djangorestframework-simplejwt
+mysqlclient
+Pillow

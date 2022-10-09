@@ -8,7 +8,7 @@ from .serializers import UserSerializer, CommitSerializer,\
      RepositorySerializer, BranchSerializer, RegistrationSerializer, PasswordChangeSerializer
 from django.contrib.auth import authenticate, login, logout
 from rest_framework.permissions import IsAuthenticated
-from .utils import get_tokens_for_user
+from .utils import get_tokens_for_user, get_repo_details
 from rest_framework.parsers import JSONParser
 
 
@@ -18,7 +18,7 @@ class RegistrationView(APIView):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            path = os.path.join("/var/mvcs/", serializer.validated_data['username'] + '/')
+            path = os.path.join("/home/mvcs/", serializer.validated_data['username'] + '/')
             os.mkdir(path)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -88,7 +88,7 @@ class UserDetail(APIView):
         user = self.get_object(pk)
         serializer = UserSerializer(user, data=request.data)
         if serializer.is_valid():
-            self. renameDirectory('/var/mvcs/', user.username, serializer.validated_data['username'])
+            self. renameDirectory('/home/mvcs/', user.username, serializer.validated_data['username'])
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -96,7 +96,7 @@ class UserDetail(APIView):
     def delete(self, request, pk, format=None):
         # Deleting the user and the directory belonging to the user
         user = self.get_object(pk)
-        shutil.rmtree('/var/mvcs/' + user.username + '/')
+        shutil.rmtree('/home/mvcs/' + user.username + '/')
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -122,7 +122,8 @@ class RepositoryList(APIView):
             repositories.save()
             # Create a new director for the repository under the user's directory
             repo = self.get_object(repositories.data['id'])
-            path = os.path.join("/var/mvcs/" + repo.owner.username + '/', repositories.validated_data['name'])
+            path = os.path.join("/home/mvcs/" + repo.owner.username + '/', repositories.validated_data['name'])
+            print(repo.owner.username)
             os.mkdir(path)
             return Response(repositories.data, status=status.HTTP_201_CREATED)
         return Response(repositories.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -147,7 +148,7 @@ class RepositoryDetail(APIView):
         serializer = RepositorySerializer(repository, data=request.data)
         if serializer.is_valid():
             # Rename the directory of the repository according to the update
-            os.rename('/var/mvcs/' + repository.owner.username + '/' + repository.name, '/var/mvcs/' + repository.owner.username + '/' + serializer.validated_data['name']) 
+            os.rename('/home/mvcs/' + repository.owner.username + '/' + repository.name, '/home/mvcs/' + repository.owner.username + '/' + serializer.validated_data['name']) 
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -155,9 +156,17 @@ class RepositoryDetail(APIView):
     def delete(self, request, pk, format=None):
         repository = self.get_object(pk)
         # Deleting the directory 
-        shutil.rmtree('/var/mvcs/' + repository.owner.username + '/' + repository.name + '/')
+        shutil.rmtree('/home/mvcs/' + repository.owner.username + '/' + repository.name + '/')
         repository.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class RepositoryDataDetail(APIView):
+    """
+    Get all the repository data.
+    """
+    def get(self, request, pk, format=None):
+        data = get_repo_details(pk)
+        return Response(data)
 
 # Branch views handling
 class BranchList(APIView):
@@ -181,7 +190,7 @@ class BranchList(APIView):
             branches.save()
             # Create a new director for the repository under the user's directory
             repo = branches.validated_data['repo']
-            path = os.path.join("/var/mvcs/" + repo.owner.username + '/' + repo.name, branches.validated_data['name'])
+            path = os.path.join("/home/mvcs/" + repo.owner.username + '/' + repo.name, branches.validated_data['name'])
             os.mkdir(path)
             return Response(branches.data, status=status.HTTP_201_CREATED)
         return Response(branches.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -206,7 +215,7 @@ class BranchDetail(APIView):
         serializer = BranchSerializer(branch, data=request.data)
         if serializer.is_valid():
             # Rename the directory of the repository according to the update
-            repo_dir = '/var/mvcs/' + branch.repo.owner.username + '/' + branch.repo.name + '/'
+            repo_dir = '/home/mvcs/' + branch.repo.owner.username + '/' + branch.repo.name + '/'
             os.rename( repo_dir + branch.name, repo_dir + serializer.validated_data['name']) 
             serializer.save()
             return Response(serializer.data)
@@ -215,7 +224,7 @@ class BranchDetail(APIView):
     def delete(self, request, pk, format=None):
         branch = self.get_object(pk)
         # Deleting the directory 
-        shutil.rmtree('/var/mvcs/' + branch.repo.owner.username + '/' + branch.repo.name + '/' + branch.name + '/')
+        shutil.rmtree('/home/mvcs/' + branch.repo.owner.username + '/' + branch.repo.name + '/' + branch.name + '/')
         branch.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -240,7 +249,7 @@ class CommitList(APIView):
         if commits.is_valid():
             commits.save()
             branch = commits.validated_data['branch']
-            base_path = "/var/mvcs/" + branch.repo.owner.username + '/' + branch.repo.name + '/' + branch.name
+            base_path = "/home/mvcs/" + branch.repo.owner.username + '/' + branch.repo.name + '/' + branch.name
             path = os.path.join(base_path, commits.validated_data['unique_id'])
             os.mkdir(path)
             return Response(commits.data, status=status.HTTP_201_CREATED)
@@ -271,7 +280,7 @@ class CommitDetail(APIView):
 
     def delete(self, request, pk, format=None):
         commit = self.get_object(pk)
-        base_path = "/var/mvcs/" + commit.branch.repo.owner.username + '/' + commit.branch.repo.name + '/' + commit.branch.name
+        base_path = "/home/mvcs/" + commit.branch.repo.owner.username + '/' + commit.branch.repo.name + '/' + commit.branch.name
         shutil.rmtree(base_path + '/' + commit.unique_id + '/')
         commit.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
