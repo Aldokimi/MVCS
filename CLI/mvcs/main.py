@@ -7,7 +7,7 @@ import traceback
 from subprocess import CalledProcessError
 
 import parser as prs
-import print_helper
+import helper
 
 __version__ = '0.1'
 SUCCESS = 0
@@ -77,19 +77,19 @@ def main():
         setup_windows_console()
         return SUCCESS if args.func(args) else ERRORS_FOUND
     except KeyboardInterrupt:
-        print_helper.puts('\n')
-        print_helper.msg('Keyboard interrupt detected, operation aborted')
+        helper.puts('\n')
+        helper.msg('Keyboard interrupt detected, operation aborted')
         return SUCCESS
     except ValueError as e:
-        print_helper.err(e)
+        helper.err(e)
         return ERRORS_FOUND
     except CalledProcessError as e:
-        print_helper.err(e.stderr)
+        helper.err(e.stderr)
         return ERRORS_FOUND
     except:
-        print_helper.err('Some internal error occurred')
+        helper.err('Some internal error occurred')
         print('\n')
-        print_helper.err_exp(
+        helper.err_exp(
             ' If you want to help, contact the developer to report bugs and '
             'include the following information:\n\n{1}\n'.format(
                 __version__, traceback.format_exc()))
