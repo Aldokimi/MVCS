@@ -12,7 +12,9 @@ class RegistrationSerializer(serializers.ModelSerializer):
         }
 
     def save(self):
-        user = User(email=self.validated_data['email'], date_of_birth=self.validated_data['date_of_birth'])
+        user = User(username=self.validated_data['username'], 
+                    email=self.validated_data['email'], 
+                    date_of_birth=self.validated_data['date_of_birth'])
         password = self.validated_data['password']
         password2 = self.validated_data['password2']
         if password != password2:
