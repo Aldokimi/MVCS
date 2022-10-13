@@ -1,4 +1,4 @@
-import core
+from . import core
 
 def create_repo_parser(subparsers):
     desc = 'Create a new local repository, or clone a new one'
