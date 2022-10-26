@@ -32,13 +32,12 @@ class LoginView(APIView):
 
         email = request.data.get('email', False)
         password = request.data.get('password', 'ERROR')
-        print(email, password)
         user = authenticate(request, email=email, password=password)
-        print(user)
+        print(user.id)
         if user is not None:
             login(request, user)
             auth_data = get_tokens_for_user(request.user)
-            return Response({'msg': 'Login Success', **auth_data}, status=status.HTTP_200_OK)
+            return Response({'msg': 'Login Success', 'user_id': user.id, **auth_data}, status=status.HTTP_200_OK)
         return Response({'msg': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 class LogoutView(APIView):
@@ -164,8 +163,15 @@ class RepositoryDataDetail(APIView):
     """
     Get all the repository data.
     """
-    def get(self, request, pk, format=None):
-        data = get_repo_details(pk)
+    def get_object(self, name):
+        try:
+            return Repository.objects.get(name=name)
+        except Repository.DoesNotExist:
+            raise Http404
+    
+    def get(self, request, name, format=None):
+        repo = self.get_object(name)
+        data = get_repo_details(repo.id)
         return Response(data)
 
 # Branch views handling

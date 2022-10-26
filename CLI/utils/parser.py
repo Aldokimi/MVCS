@@ -28,7 +28,8 @@ def commit_parser(subparsers):
     list_group.add_argument( '-l', '--list',help='list commits', action='store_true')
     
     info_group = parser.add_argument_group('commit info')      
-    info_group.add_argument('-si', '--show-info', help='Information about the commit with the given number', dest='info')
+    info_group.add_argument('-si', '--show-info', 
+                help='Information about the commit with the given number', dest='info', action='store_true')
 
     create_group = parser.add_argument_group('create commit')
     create_group.add_argument('-c', '--create', help='Commit message', dest='create')

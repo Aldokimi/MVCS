@@ -19,14 +19,24 @@ class RepoManagement():
         except:
             raise Exception("Error, cannot open repo_config.json")
 
-    def get_branch_data(self, branch_name):
+    def get_branch_data(self, branch_name=None, branch_id=None):
         '''
         Get a specific branch data.
         '''
+        target_branch = None if not branch_id else self.__repo_config['branches'][f'{branch_id}']
+        if target_branch:
+            return target_branch
+
+        found = False
         for branch in self.__repo_config['branches']:
-            if branch['name'] == branch_name:
-                return branch
-        raise Exception("Error, there is not branch with name{}!".format(branch_name))
+            branch = self.__repo_config['branches'][branch]
+            if branch['name'] == branch_name: 
+                found = True
+                target_branch = branch
+        if found:
+            return target_branch
+        else:
+            raise Exception("Error, there is not branch with name{}!".format(branch_name))
 
     def get_latest_commit(self, branch_name):
         '''
@@ -52,3 +62,18 @@ class RepoManagement():
 
     def get_repo_config_file_path(self):
         return self.__repo_config_file
+
+    def create_commit(self, commit_data):
+        self.__operate_commit(commit_data['id'], commit_data)
+
+    def modify_commit(self, commit_data, commit_id):
+        self.__operate_commit(commit_id, commit_data)
+
+    def __operate_commit(self, commit_id, commit_data):
+        try:
+            with open(self.__repo_config_file, 'w') as f:
+                branch_id = commit_data['branch']
+                self.__repo_config['branches'][f'{branch_id}']['commits'][f'{commit_id}'] = commit_data
+                json.dump(self.__repo_config, f)
+        except:
+            raise Exception("Error, cannot open repo_config.json")

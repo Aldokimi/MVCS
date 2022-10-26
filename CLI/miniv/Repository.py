@@ -1,5 +1,3 @@
-from contextlib import suppress
-from pathlib import Path
 import shutil
 import subprocess
 import tarfile
@@ -24,16 +22,20 @@ class Create():
             '''
             # Create the repo directory and a .mvcs file in the base dir
             '''
-            repo_name = self.__create_request if self.__create_request else self.__clone_url.split('@')[1].rsplit('/', 2)[-2:][0]
+            repo_name = self.__create_request if self.__create_request else self.__clone_url.split('@')[1].rsplit('/', 2)[-2:][1]
             repo_path = os.path.join(os.getcwd(), repo_name)
             if not os.path.exists(repo_path):
                 os.mkdir(repo_path, 0o755)
             else:
+                if os.path.exists(repo_path):
+                    shutil.rmtree(repo_path)
                 raise Exception("Error, there is already a directory with the same repo name!")
             self.__config_folder = os.path.join(repo_path, ".mvcs")
             if not os.path.exists(self.__config_folder):
                 os.mkdir(self.__config_folder, 0o755)
             else:
+                if not os.path.exists(repo_path):
+                    shutil.rmtree(repo_path)
                 raise Exception("Error, there already exists a config directory (you are already in a repository)!")
         else:
             raise Exception("Error: Wrong input, please clone repository or create a new one!")
@@ -61,8 +63,10 @@ class Create():
         if response.status_code == 200:
             user_data['refresh_token'] = (response.json()['refresh'])
             user_data['access_token']  = (response.json()['access'])
+            user_data['current_branch']= "main"
             user_data['email']         = email
-            user_data['password']      = UM.hash_password(password.encode('utf-8')).decode("utf-8")
+            user_data['id']            = response.json()['user_id']
+            user_data['password']      = UM.encrypt_password(password).decode("utf-8")
         else:
             raise Exception("Error, wrong credentials, please try again!")
 
@@ -90,8 +94,7 @@ class Create():
         '''
         user      = self.__clone_url.split('@')[0]
         host      = self.__clone_url.split('@')[1]
-        repo_name = host.rsplit('/', 2)[-2:][0]
-        repo_id   = host.rsplit('/', 2)[-2:][1]
+        repo_name = host.rsplit('/', 2)[-2:][1]
         host      = host.rsplit(':', 1)[0]
         
         if UM.check_ssh(host=user, user=user):
@@ -112,7 +115,7 @@ class Create():
         if not os.path.isfile(repo_config_file):
             try:
                 with open(repo_config_file, 'w+') as f:
-                    response = requests.get(f'http://127.0.0.1:8000/api/repos/data/{repo_id}/')
+                    response = requests.get(f'http://127.0.0.1:8000/api/repos/data/{repo_name}/')
                     if response.status_code != 200:
                         raise Exception("Error, requesting repo data failed, please check your clone URL and try again")
                     repo_data = response.json()
@@ -128,7 +131,9 @@ class Create():
         '''
         try:
             print(self.__clone_url[:-2])
-            p = subprocess.run(['scp', '-r', f'{self.__clone_url[:-2]}main/', f'{UM.fix_path(self.__config_folder)}'])  
+            p = subprocess.run(['scp', '-r', f'{self.__clone_url}/main/', f'{UM.fix_path(self.__config_folder)}'])
+            if p.returncode != 0 :
+                raise Exception("Error, Downloading repo data failed!")
         except subprocess.CalledProcessError or p.returncode != 0:
             raise Exception("Error, wrong clone URL!")
 
@@ -155,7 +160,7 @@ class Create():
         '''
         ph.msg("Do you want to create this repository remotely as well? (Y/n)")
         answer = input()
-        if str(answer) == "Y":
+        if str(answer) == "Y" or str(answer) == "y" or str(answer) == "Yes" or str(answer) == "yes":
             # Login user and create user configuration
             user_data = self.login()
             self.create_user_configuration(user_data)
