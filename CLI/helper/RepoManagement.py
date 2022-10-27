@@ -1,5 +1,6 @@
 import os
 import json
+import shutil
 
 from datetime import datetime
 
@@ -77,3 +78,41 @@ class RepoManagement():
                 json.dump(self.__repo_config, f)
         except:
             raise Exception("Error, cannot open repo_config.json")
+
+    def create_branch(self, branch_data):
+        try:
+            with open(self.__repo_config_file, 'w') as f:
+                branch_id = branch_data['id']
+                self.__repo_config['branches'][f'{branch_id}'] = branch_data
+                last_commit = self.get_latest_commit('main')
+                last_commit_id = self.get_latest_commit('main')['id']
+                self.__repo_config['branches'][f'{branch_id}']['commits'] = {f'{last_commit_id}': last_commit}
+                json.dump(self.__repo_config, f)
+        except:
+            raise Exception("Error, cannot open repo_config.json")
+
+    def rename_branch(self, old_name, new_name):
+        try:
+            with open(self.__repo_config_file, 'w') as f:
+                branch_id = self.get_branch_data(branch_name=old_name)['id']
+                self.__repo_config['branches'][f'{branch_id}']['name'] = new_name
+                json.dump(self.__repo_config, f)
+        except:
+            raise Exception("Error, cannot open repo_config.json")
+
+    def delete_branch(self, branch_data):
+        try:
+            with open(self.__repo_config_file, 'w') as f:
+                branch_id = branch_data['id']
+                del self.__repo_config['branches'][f'{branch_id}']
+                json.dump(self.__repo_config, f)
+        except:
+            raise Exception("Error, cannot open repo_config.json")
+
+    def delete_working_directory(self):
+        for file_name in os.listdir(os.getcwd()):
+            if file_name != '.mvcs':
+                if os.path.isfile(file_name):
+                    os.remove(file_name)
+                else:
+                    shutil.rmtree(os.path.join(os.getcwd(), file_name))

@@ -12,7 +12,7 @@ from helper import UserManagement as UM
 
 class Create():
     
-    __clone_url, __create_request, __config_folder = None, None, None
+    __clone_url, __create_request, __config_folder, __UM = None, None, None, None
 
     def __init__(self, args) -> None:
         self.__clone_url = args.clone
@@ -37,6 +37,7 @@ class Create():
                 if not os.path.exists(repo_path):
                     shutil.rmtree(repo_path)
                 raise Exception("Error, there already exists a config directory (you are already in a repository)!")
+            self.__UM = UM.UserManagement(self.__config_folder)
         else:
             raise Exception("Error: Wrong input, please clone repository or create a new one!")
 
@@ -66,7 +67,7 @@ class Create():
             user_data['current_branch']= "main"
             user_data['email']         = email
             user_data['id']            = response.json()['user_id']
-            user_data['password']      = UM.encrypt_password(password).decode("utf-8")
+            user_data['password']      = self.__UM.encrypt_password(password).decode("utf-8")
         else:
             raise Exception("Error, wrong credentials, please try again!")
 
@@ -97,7 +98,7 @@ class Create():
         repo_name = host.rsplit('/', 2)[-2:][1]
         host      = host.rsplit(':', 1)[0]
         
-        if UM.check_ssh(host=user, user=user):
+        if self.__UM.check_ssh(host=user, user=user):
             raise Exception("Error, wrong clone URL!")
 
         # Login user
@@ -131,7 +132,7 @@ class Create():
         '''
         try:
             print(self.__clone_url[:-2])
-            p = subprocess.run(['scp', '-r', f'{self.__clone_url}/main/', f'{UM.fix_path(self.__config_folder)}'])
+            p = subprocess.run(['scp', '-r', f'{self.__clone_url}/main/', f'{self.__UM.fix_path(self.__config_folder)}'])
             if p.returncode != 0 :
                 raise Exception("Error, Downloading repo data failed!")
         except subprocess.CalledProcessError or p.returncode != 0:

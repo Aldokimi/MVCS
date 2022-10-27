@@ -1,4 +1,3 @@
-import json
 import os
 import shutil
 import uuid
@@ -90,6 +89,7 @@ class commit():
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
+        
         response = None
         if method == 'post':
             response = requests.post(API_end_point, json = data, headers=headers, )

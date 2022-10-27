@@ -56,7 +56,7 @@ def branch_parser(subparsers):
     delete_group.add_argument('-d', '--delete', nargs='+', help='delete branch(es)', dest='delete_b', metavar='branch')
 
     edit_group = branch_parser.add_argument_group('edit branches')
-    edit_group.add_argument('-rn', '--rename-branch', nargs='+', 
+    edit_group.add_argument('-rn', '--rename', nargs='+', 
         help='renames the current branch (miniv branch -rn new_name)'
         'or another specified branch (mg branch -rn branch_name new_name)',
         dest='rename_b'
@@ -89,6 +89,7 @@ def update_parser(subparsers):
 def checkout_parser(subparsers):
     desc = 'Checkout to another branch'
     parser = subparsers.add_parser('checkout', help=desc, description=(desc.capitalize()), aliases=['ch'])
+    parser.add_argument('--to', dest='branch_name', help='The branch destination where to switch to!')
     parser.set_defaults(func=core.checkout)
 
 
