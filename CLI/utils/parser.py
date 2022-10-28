@@ -68,7 +68,7 @@ def merge_branches_parser(subparsers):
     desc = 'Merge two branches'
     parser = subparsers.add_parser('merge', help=desc, description=(
           desc.capitalize() + '. ' + 'Merge the current branch to another branch in the local repository'), aliases=['mrg'])
-    parser.add_argument('branch', help='the branch name that is going to be merged into the current branch')
+    parser.add_argument('--branch', help='the branch name that is going to be merged into the current branch', dest="branch")
     parser.set_defaults(func=core.merge_branches)
 
 def upload_parser(subparsers):
