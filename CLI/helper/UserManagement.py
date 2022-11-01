@@ -34,19 +34,21 @@ class UserManagement():
     def get_user_data(self):
         return self.__user_config
 
-    def encrypt_password(self, raw):
+    @staticmethod
+    def encrypt_password(raw):
         BS = AES.block_size
         pad = lambda s: s + (BS - len(s) % BS) * chr(BS - len(s) % BS)
         raw = base64.b64encode(pad(raw).encode('utf8'))
         iv = get_random_bytes(AES.block_size)
-        cipher = AES.new(key= self.__key__, mode= AES.MODE_CFB,iv= iv)
+        cipher = AES.new(key= UserManagement.__key__, mode= AES.MODE_CFB,iv= iv)
         return base64.b64encode(iv + cipher.encrypt(raw))
-
-    def decrypt_password(self, enc):
+    
+    @staticmethod
+    def decrypt_password(enc):
         unpad = lambda s: s[:-ord(s[-1:])]
         enc = base64.b64decode(enc)
         iv = enc[:AES.block_size]
-        cipher = AES.new(self.__key__, AES.MODE_CFB, iv)
+        cipher = AES.new(UserManagement.__key__, AES.MODE_CFB, iv)
         return unpad(base64.b64decode(cipher.decrypt(enc[AES.block_size:])).decode('utf8'))
 
     def fix_path(self, path):

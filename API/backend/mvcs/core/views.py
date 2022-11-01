@@ -1,5 +1,9 @@
+import lzma
 import os, shutil, subprocess
+import tarfile
+import uuid
 from django.http import Http404
+import requests
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -26,14 +30,13 @@ class RegistrationView(APIView):
 class LoginView(APIView):
     parser_classes = [JSONParser]
     def post(self, request):
-        print(request.data)
         if 'email' not in request.data or 'password' not in request.data:
             return Response({'msg': 'Credentials missing'}, status=status.HTTP_400_BAD_REQUEST)
 
         email = request.data.get('email', False)
         password = request.data.get('password', 'ERROR')
         user = authenticate(request, email=email, password=password)
-        print(user.id)
+
         if user is not None:
             login(request, user)
             auth_data = get_tokens_for_user(request.user)
@@ -122,8 +125,57 @@ class RepositoryList(APIView):
             # Create a new director for the repository under the user's directory
             repo = self.get_object(repositories.data['id'])
             path = os.path.join("/home/mvcs/" + repo.owner.username + '/', repositories.validated_data['name'])
-            print(repo.owner.username)
             os.mkdir(path)
+            
+            ## Create a new branch called main which have a commit inside it
+            # Create the main branch
+            branch_request_data = {
+                "repo": repo.id,
+                "name": "main",
+            }
+
+            branch_data = BranchSerializer(data=branch_request_data)
+            if branch_data.is_valid():
+                branch_data.save()
+                path_to_branch = os.path.join(
+                    "/home/mvcs/" + repo.owner.username + '/' + repo.name, branch_data.validated_data['name'])
+                os.mkdir(path_to_branch)
+            else:
+                os.rmdir(path)
+                return Response(branch_data.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                branch = Branch.objects.get(pk=branch_data.data['id'], name=branch_data.validated_data['name'])
+            except Branch.DoesNotExist:
+                raise Http404
+
+            # Create the first commit in the main branch
+            commit_request_data = {
+                "message": 'Initial commit',
+                "branch" : branch.id,
+                "committer": repo.owner.id,
+                "unique_id": uuid.uuid4().hex
+            }
+
+            commit_data = CommitSerializer(data=commit_request_data)
+            if commit_data.is_valid():
+                commit_data.save()
+            else:
+                os.rmdir(path)
+                return Response(commit_data.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create the compressed folder of the initial commit
+            base_path = "/home/mvcs/" + repo.owner.username + '/' + repo.name + '/' + 'main'
+            commit_unique_id = commit_data.validated_data['unique_id']
+            commit_file_name = f'{commit_unique_id}.tar.xz'
+            xz_file = lzma.LZMAFile(commit_file_name, mode='w')
+            with tarfile.open(mode='w', fileobj=xz_file) as tar_xz_file:
+                for file in os.listdir(base_path):
+                    tar_xz_file.add(os.path.join(base_path, file))
+            xz_file.close()
+            shutil.copy2(commit_file_name, base_path)
+            os.remove(commit_file_name)
+
             return Response(repositories.data, status=status.HTTP_201_CREATED)
         return Response(repositories.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -163,15 +215,23 @@ class RepositoryDataDetail(APIView):
     """
     Get all the repository data.
     """
-    def get_object(self, name):
+    def __get_user(self, name):
         try:
-            return Repository.objects.get(name=name)
+            return User.objects.get(username=name)
         except Repository.DoesNotExist:
             raise Http404
     
-    def get(self, request, name, format=None):
-        repo = self.get_object(name)
-        data = get_repo_details(repo.id)
+    def __get_object(self, name ,owner):
+        try:
+            return Repository.objects.get(owner=owner, name=name)
+        except Repository.DoesNotExist:
+            raise Http404
+    
+    def get(self, request, owner, name, format=None):
+        owner_user = self.__get_user(owner)
+        repo = self.__get_object(name, owner_user)
+        print(repo.name, repo.id)
+        data = get_repo_details(repo.id, owner_user.id)
         return Response(data)
 
 # Branch views handling
@@ -254,10 +314,6 @@ class CommitList(APIView):
         commits = CommitSerializer(data=request.data)
         if commits.is_valid():
             commits.save()
-            branch = commits.validated_data['branch']
-            base_path = "/home/mvcs/" + branch.repo.owner.username + '/' + branch.repo.name + '/' + branch.name
-            path = os.path.join(base_path, commits.validated_data['unique_id'])
-            os.mkdir(path)
             return Response(commits.data, status=status.HTTP_201_CREATED)
         return Response(commits.errors, status=status.HTTP_400_BAD_REQUEST)
 

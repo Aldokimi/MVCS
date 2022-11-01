@@ -1,3 +1,4 @@
+from django.http import Http404
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Repository, Branch, Commit, User
 from .serializers import RepositorySerializer, BranchSerializer, CommitSerializer, UserSerializer
@@ -10,14 +11,20 @@ def get_tokens_for_user(user):
         'access': str(refresh.access_token),
     }
 
-def get_repo_details(id):
-    repo = Repository.objects.get(pk=id)
-    repo_data = RepositorySerializer(repo).data
+def get_repo_details(repo_id, owner_id):
+    try:
+        repo = Repository.objects.get(pk=repo_id)
+        repo_data = RepositorySerializer(repo).data
+    except Repository.DoesNotExist:
+        raise Http404
+    
+    try:
+        owner = User.objects.get(pk=owner_id)
+        repo_data['owner_data'] = UserSerializer(owner).data
+    except Repository.DoesNotExist:
+        raise Http404
 
-    owner = User.objects.get(pk=repo_data['id'])
-    repo_data['owner_data'] = UserSerializer(owner).data
-
-    branches = Branch.objects.filter(repo=id)
+    branches = Branch.objects.filter(repo=repo.id)
     branches_array = {}
     
     for branch in branches:

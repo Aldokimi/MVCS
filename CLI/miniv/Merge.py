@@ -123,8 +123,6 @@ class merge():
                         else:
                             '''
                             # Recompute invariant and advance source
-                            '''
-                            '''
                             # invariant = invariant[:len(source_text)]
                             '''
                             if len(invariant) > len(source_text):
