@@ -63,6 +63,41 @@ class UserManagement():
         except:
             return False
 
+    def add_initial_commit(self, commit):
+        try:
+            with open(os.path.join(self.__config_folder, 'user_config.json'), 'w') as f:
+                self.__user_config['new_commits'] = { 0 : commit}
+                json.dump(self.__user_config, f)
+        except:
+            raise Exception("Error, cannot open repo_config.json")
+
+    def add_new_commit(self, internal_id, commit_data):
+        try:
+            with open(os.path.join(self.__config_folder, 'user_config.json'), 'w') as f:
+                self.__user_config['new_commits'][f"{internal_id}"] = commit_data
+                json.dump(self.__user_config, f)
+        except:
+            raise Exception("Error, cannot open repo_config.json")
+
+    def modify_new_commit(self, last_new_commit_id, commit_data):
+        try:
+            with open(os.path.join(self.__config_folder, 'user_config.json'), 'w') as f:
+                self.__user_config['new_commits'][last_new_commit_id] = commit_data
+                json.dump(self.__user_config, f)
+        except:
+            raise Exception("Error, cannot open repo_config.json")
+
+    def get_last_new_commit(self):
+        last_commit = self.__user_config['new_commits']['0']
+        commit_internal_id = 0
+
+        for commit in self.__user_config['new_commits']:
+            if int(commit) > commit_internal_id:
+                last_commit = self.__user_config['new_commits'][commit]
+                commit_internal_id = int(commit)
+
+        return (commit_internal_id, last_commit)
+
     def update_current_branch(self, new_branch):
         try:
             with open(os.path.join(self.__config_folder, 'user_config.json'), 'w') as f:

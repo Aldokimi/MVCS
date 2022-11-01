@@ -102,34 +102,68 @@ class commit():
 
     def __commit_message_commit(self):
         commit_unique_id = self.__create_commit_folder()
-        response = self.__apply_commit_on_API("post", commit_unique_id)
+        branch_id = self.__repo_management.get_branch_data(
+            self.__user_mgt.get_user_data()['current_branch'])['id']
+        committer = self.__repo_management.get_owner_data()['id']
 
-        if response and response.status_code == 201:
-            self.__repo_management.create_commit(response.json())
-        else:
-            raise Exception('Error, cannot create a commit request to the API!')
+        commit_data = {
+            "message": self.__commit_message,
+            "branch": int(branch_id),
+            "committer": int(committer),
+            "unique_id": commit_unique_id
+        }
+
+        last_new_commit_id = self.__user_mgt.get_last_new_commit()[0]
+        self.__user_mgt.add_new_commit(int(last_new_commit_id) + 1, commit_data)
+        # response = self.__apply_commit_on_API("post", commit_unique_id)
+
+        # if response and response.status_code == 201:
+        #     self.__repo_management.create_commit(response.json())
+        # else:
+        #     raise Exception('Error, cannot create a commit request to the API!')
 
     def __amend_commit(self):
         '''
-        # To amend a commit we will have to detect the changes, then changes the API and the CLI storage accordingly
+        To amend a commit we will have to detect the changes,\n
+        then changes the API and the CLI storage accordingly
         '''
         ph.warn("Do you want to change the commit message? (Y/n)")
         answer = input("\t\t\t\n")
         new_message = None
         if answer == 'Y' or answer == 'y' or answer == 'Yes' or answer == 'yes':
             new_message = str(input('Enter the new commit message: '))
-        
+
         commit_unique_id = self.__create_commit_folder()
-        response = self.__apply_commit_on_API(
-            "put", 
-            commit_unique_id, 
-            self.__repo_management.get_latest_commit('main')['id'],
-            new_message
-        )
-        
-        if response and response.status_code == 200:
-            commit_data = response.json()
-            commit_id = self.__repo_management.get_latest_commit('main')['id']
-            self.__repo_management.modify_commit(commit_data, commit_id)
+        branch_id = self.__repo_management.get_branch_data(
+            self.__user_mgt.get_user_data()['current_branch'])['id']
+        committer = self.__repo_management.get_owner_data()['id']
+
+        commit_data = {
+            "amend": True,
+            "message": new_message if new_message else\
+                self.__user_mgt.get_last_new_commit()[1]['message'],
+            "branch": int(branch_id),
+            "committer": int(committer),
+            "unique_id": commit_unique_id
+        }
+
+        last_new_commit_id = self.__user_mgt.get_last_new_commit()[0]
+
+        if len(self.__user_mgt.get_user_data()['new_commits']) == 1:
+            self.__user_mgt.add_new_commit(int(last_new_commit_id) + 1, commit_data)
         else:
-            raise Exception('Error, cannot create a commit request to the API!')
+            self.__user_mgt.modify_new_commit(last_new_commit_id, commit_data)
+        # commit_unique_id = self.__create_commit_folder()
+        # response = self.__apply_commit_on_API(
+        #     "put", 
+        #     commit_unique_id, 
+        #     self.__repo_management.get_latest_commit('main')['id'],
+        #     new_message
+        # )
+        
+        # if response and response.status_code == 200:
+        #     commit_data = response.json()
+        #     commit_id = self.__repo_management.get_latest_commit('main')['id']
+        #     self.__repo_management.modify_commit(commit_data, commit_id)
+        # else:
+        #     raise Exception('Error, cannot create a commit request to the API!')

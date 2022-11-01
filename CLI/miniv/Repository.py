@@ -9,6 +9,7 @@ import requests
 from getpass import getpass
 from helper import print_helper as ph
 from helper import UserManagement as UM
+from helper import RepoManagement as RM
 
 class Create():
     
@@ -94,9 +95,14 @@ class Create():
             raise Exception("Error, there exists already user config file!")
 
     def clone(self):
-    
         '''
-        # Check if the user has SSH permissions to the server 
+        Check if the user has SSH permissions to the server, 
+        save the repo data to repo_config.json and, 
+        save login data into user_config.json, then 
+        with all the user's data. (in the .mvcs dir) \n
+        Download the compressed folder of the last commit 
+        in the main branch to .mvcs/main/ and decompress it to the base dir and
+        decompress the commit folder into the working directory.
         '''
         user      = self.__clone_url.split('@')[0]
         host      = self.__clone_url.split('@')[1]
@@ -106,12 +112,6 @@ class Create():
 
         # Login user
         user_data = self.login()
-
-        ''' 
-        # Save the repo data to repo_config.json and 
-        # save login data into user_config.json
-        # with all the user's data. (in the .mvcs dir) 
-        '''
         self.create_user_configuration(user_data)
         self.__UM = UM.UserManagement(self.__config_folder)
         
@@ -133,12 +133,14 @@ class Create():
         else:
             raise Exception("Error, there exists already repository config file!")
 
+        repo_management = RM.RepoManagement(self.__config_folder)
+        self.__UM.add_initial_commit(repo_management.get_latest_commit('main'))
+
         '''
-        # Download the compressed folder of the last commit 
-        # in the main branch to .mvcs/main/ and decompress it to the base dir
+        Download the compressed folder of the last commit 
+        in the main branch to .mvcs/main/ and decompress it to the base dir
         '''
         try:
-            print(self.__clone_url[:-2])
             p = subprocess.run(['scp', '-r', f'{self.__clone_url}/main/', f'{self.__UM.fix_path(self.__config_folder)}'])
             if p.returncode != 0 :
                 raise Exception("Error, Downloading repo data failed!")
@@ -146,7 +148,7 @@ class Create():
             raise Exception("Error, wrong clone URL!")
 
         '''
-        # Decompress the commit folder into the working directory.
+        Decompress the commit folder into the working directory.
         '''
         branch_folder = os.path.join(self.__config_folder, 'main')
         commit_folder = os.path.join(branch_folder, os.listdir(branch_folder)[0])
