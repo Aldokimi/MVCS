@@ -11,7 +11,7 @@ from helper import print_helper as ph
 from helper import UserManagement as UM
 from helper import RepoManagement as RM
 
-class Create():
+class repo():
     
     __clone_url, __create_request, __config_folder, __UM = None, None, None, None
 
@@ -153,7 +153,7 @@ class Create():
         branch_folder = os.path.join(self.__config_folder, 'main')
         commit_folder = os.path.join(branch_folder, os.listdir(branch_folder)[0])
         working_dir = self.__config_folder.split('.mvcs')[0]
-        if self.__is_nonempty_tar_file(commit_folder):
+        if self.is_nonempty_tar_file(commit_folder):
             with tarfile.open(commit_folder) as ccf:
                 ccf.extractall(working_dir)
                 try:
@@ -165,7 +165,8 @@ class Create():
                 except Exception:
                     raise Exception("Error happened during downloading the repo!")
 
-    def __is_nonempty_tar_file(self, archive):
+    @staticmethod
+    def is_nonempty_tar_file(self, archive):
         with tarfile.open(archive, "r") as tar:
             try:
                 file_content = tar.getmembers()

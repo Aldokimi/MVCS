@@ -4,7 +4,7 @@ from helper import RepoManagement as RM
 from helper import UserManagement as UM
 from helper import print_helper   as ph
 
-class update():
+class diff():
     __repo_management, __config_folder, __user_mgt = None, None, None
     __file1, __file2 = None, None
     def __init__(self, args) -> None:

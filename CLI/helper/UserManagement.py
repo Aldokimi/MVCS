@@ -102,10 +102,12 @@ class UserManagement():
 
         return (commit_internal_id, last_commit)
 
-    def update_current_branch(self, new_branch):
+    def delete_new_commit(self, internal_id):
+        new_commits = self.get_user_data()["new_commits"]
+        del new_commits[internal_id]
         try:
             with open(os.path.join(self.__config_folder, 'user_config.json'), 'w') as f:
-                self.__user_config['current_branch'] = new_branch
+                self.__user_config['new_commits'] = new_commits
                 json.dump(self.__user_config, f)
         except:
             raise Exception("Error, cannot open user_config.json")
@@ -122,6 +124,14 @@ class UserManagement():
         try:
             with open(os.path.join(self.__config_folder, 'user_config.json'), 'w') as f:
                 self.__user_config['new_commits'] = initial_commit
+                json.dump(self.__user_config, f)
+        except:
+            raise Exception("Error, cannot open user_config.json")
+    
+    def update_current_branch(self, new_branch):
+        try:
+            with open(os.path.join(self.__config_folder, 'user_config.json'), 'w') as f:
+                self.__user_config['current_branch'] = new_branch
                 json.dump(self.__user_config, f)
         except:
             raise Exception("Error, cannot open user_config.json")

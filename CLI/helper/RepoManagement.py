@@ -70,6 +70,16 @@ class RepoManagement():
     def modify_commit(self, commit_data, commit_id):
         self.__operate_commit(commit_id, commit_data)
 
+    def delete_commit(self, branch, commit_id):
+        try:
+            with open(self.__repo_config_file, 'w') as f:
+                commits = self.__repo_config['branches'][f'{branch}']['commits']
+                del commits[f'{commit_id}']
+                self.__repo_config['branches'][f'{branch}']['commits'] = commits
+                json.dump(self.__repo_config, f)
+        except:
+            raise Exception("Error, cannot open repo_config.json")
+
     def __operate_commit(self, commit_id, commit_data):
         try:
             with open(self.__repo_config_file, 'w') as f:

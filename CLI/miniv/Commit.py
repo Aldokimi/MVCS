@@ -3,6 +3,7 @@ import shutil
 import uuid
 import lzma
 import tarfile
+import Repository
 import requests
 
 from helper import RepoManagement as RM
@@ -114,3 +115,73 @@ class commit():
             self.__user_mgt.add_new_commit(int(last_new_commit_id) + 1, commit_data)
         else:
             self.__user_mgt.modify_new_commit(last_new_commit_id, commit_data)
+
+def undo(config_folder, repo_management, user_management):
+    if len(user_management.get_user_data()["new_commits"]) == 1:
+        ## Remove the last commit remotely
+        # Delete the commit from the API
+        API_end_point = 'http://127.0.0.1:8000/api/commits/' + f'{last_commit["id"]}/'
+        
+        headers={
+            "Authorization": f"Bearer {user_management.get_user_data()['access_token']}",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+
+        commit_data = {
+            "message": last_commit["message"],
+            "branch": last_commit["id"],
+            "committer": last_commit["committer"],
+            "unique_id": last_commit["unique_id"]
+        }
+
+        response = requests.delete(API_end_point, json = commit_data, headers=headers, )
+        if response.status_code == 200:
+            # Delete the commit form configuration
+            current_branch = user_management.get_user_data()["current_branch"]
+            last_commit = repo_management.get_latest_commit(
+                user_management.get_user_data()["current_branch"]
+            )["id"]
+            repo_management.delete_commit(current_branch, last_commit)
+        else:
+            raise Exception("Error, couldn't delete the commit from the API")
+
+        # Update the repository
+        update_repository(config_folder, repo_management, user_management)
+    else:
+        ## Remove the last commit locally
+        # Delete the commit from the configuration
+        (internal_id, commit_data) = user_management.get_last_new_commit()
+        user_management.delete_new_commit(internal_id)
+        commit_unique_id = commit_data["unique_id"]
+        commit_file_name = os.path.join(
+            config_folder, 
+            user_management.get_user_data()["current_branch"] + f"/{commit_unique_id}.tar.xz"
+        )
+        os.remove(commit_file_name)
+
+        # Update the repository
+        update_repository(config_folder, repo_management, user_management)
+
+def update_repository(config_folder, repo_management, user_management):
+    # Delete the working directory
+    repo_management.delete_working_directory()
+
+    # Extract the last commit 
+    commit_data = user_management.get_last_new_commit()[1]
+    commit_unique_id = commit_data["unique_id"]
+    commit_file_name = os.path.join(
+        config_folder, 
+        user_management.get_user_data()["current_branch"] + f"/{commit_unique_id}.tar.xz"
+    )
+    working_dir = config_folder.split('.mvcs')[0]
+    if Repository.repo.is_nonempty_tar_file(commit_file_name):
+        with tarfile.open(commit_file_name) as ccf:
+            ccf.extractall(working_dir)
+            try:
+                path = os.path.join(working_dir, os.listdir(working_dir)[1])
+                for filename in os.listdir(path):
+                    shutil.move(os.path.join(path, filename), os.path.join(working_dir, filename))
+                os.rmdir(path)
+            except Exception:
+                raise Exception("Error happened during downloading the repo!")

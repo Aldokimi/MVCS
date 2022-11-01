@@ -16,7 +16,7 @@ have the option to create this repository remotely as well,\
 you can user for this `miniv repo --create name_of_the_new_repo`
     '''
     try:
-        Repository.Create(args)
+        Repository.repo(args)
     except Exception as e:
         raise Exception(e)
 
@@ -60,4 +60,10 @@ def diff(args):
     print("diff")
 
 def undo(args):
-    print("undo")
+    repo_config_path= os.path.join(os.path.join(os.getcwd()), ".mvcs")
+    repo_management = RM.RepoManagement(repo_config_path)
+    user_management = UM.UserManagement(repo_config_path)
+    try:
+        Commit.undo(repo_config_path, repo_management, user_management)
+    except Exception as e:
+        raise Exception(e)
