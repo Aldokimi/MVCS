@@ -75,14 +75,14 @@ def upload_parser(subparsers):
     desc = 'Upload the changes to the remote repository'
     parser = subparsers.add_parser( 'upload', help=desc, description=(
           desc.capitalize() + '. ' + 'Upload all the local commits to the remote repository.'), aliases=['up'])
-    parser.add_argument('url', help='The repository URL, meaning this is a repository which is not linked to a remote repo'
+    parser.add_argument('--url', help='The repository URL, meaning this is a repository which is not linked to a remote repo'
         'and we are linking it when we pass the repo URL')
     parser.set_defaults(func=core.upload)
 
 def update_parser(subparsers):
     desc = 'Update the current repository with the changes from the remote repository'
     parser = subparsers.add_parser(
-        'upload', help=desc, description=(
+        'update', help=desc, description=(
           desc.capitalize() + '. ' + 'download the changes from the remote repository and apply them on the current branch.'), aliases=['upd'])
     parser.set_defaults(func=core.update)
 

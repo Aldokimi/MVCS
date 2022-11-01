@@ -1,6 +1,6 @@
 import os
 
-from miniv import Repository, Commit, Branch
+from miniv import Repository, Commit, Branch, Upload
 
 from helper import RepoManagement as RM
 from helper import UserManagement as UM
@@ -39,7 +39,10 @@ def merge_branches(args):
     print(vars(args))
 
 def upload(args):
-    print(vars(args))
+    try:
+        Upload.upload(args)
+    except Exception as e:
+        raise Exception(e)
 
 def update(args):
     print(vars(args))

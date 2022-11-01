@@ -67,39 +67,6 @@ class commit():
 
         return commit_unique_id
 
-    def __apply_commit_on_API(self, method, commit_unique_id, commit_id=None, new_message=None):
-        '''
-        # Create a commit inside the repo_config.json and in the backend
-        '''
-        API_end_point = 'http://127.0.0.1:8000/api/commits/' if method == 'post'\
-             else 'http://127.0.0.1:8000/api/commits/' + f'{commit_id}/'
-        commit_message = self.__repo_management.get_latest_commit('main')['message']
-        if method == 'put' and new_message != None:
-            commit_message = new_message
-    
-        data = {
-            "message": commit_message,
-            "branch" : self.__repo_management.get_branch_data('main')['id'],
-            "committer": self.__user_mgt.get_user_data()['id'],
-            "unique_id": commit_unique_id
-        }
-        
-        headers={
-            "Authorization": f"Bearer {self.__user_mgt.get_user_data()['access_token']}",
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-        }
-        
-        response = None
-        if method == 'post':
-            response = requests.post(API_end_point, json = data, headers=headers, )
-        elif method == 'put':
-            response = requests.put(API_end_point, json = data, headers=headers, )
-        else:
-            raise Exception('Error, cannot updated the commit!')
-
-        return response
-
     def __commit_message_commit(self):
         commit_unique_id = self.__create_commit_folder()
         branch_id = self.__repo_management.get_branch_data(
@@ -115,12 +82,6 @@ class commit():
 
         last_new_commit_id = self.__user_mgt.get_last_new_commit()[0]
         self.__user_mgt.add_new_commit(int(last_new_commit_id) + 1, commit_data)
-        # response = self.__apply_commit_on_API("post", commit_unique_id)
-
-        # if response and response.status_code == 201:
-        #     self.__repo_management.create_commit(response.json())
-        # else:
-        #     raise Exception('Error, cannot create a commit request to the API!')
 
     def __amend_commit(self):
         '''
@@ -153,17 +114,3 @@ class commit():
             self.__user_mgt.add_new_commit(int(last_new_commit_id) + 1, commit_data)
         else:
             self.__user_mgt.modify_new_commit(last_new_commit_id, commit_data)
-        # commit_unique_id = self.__create_commit_folder()
-        # response = self.__apply_commit_on_API(
-        #     "put", 
-        #     commit_unique_id, 
-        #     self.__repo_management.get_latest_commit('main')['id'],
-        #     new_message
-        # )
-        
-        # if response and response.status_code == 200:
-        #     commit_data = response.json()
-        #     commit_id = self.__repo_management.get_latest_commit('main')['id']
-        #     self.__repo_management.modify_commit(commit_data, commit_id)
-        # else:
-        #     raise Exception('Error, cannot create a commit request to the API!')

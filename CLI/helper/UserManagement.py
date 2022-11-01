@@ -32,7 +32,11 @@ class UserManagement():
         return response.status_code == 200
 
     def get_user_data(self):
-        return self.__user_config
+        try:
+            with open(os.path.join(self.__config_folder, 'user_config.json'), 'r') as f:
+                return json.load(f)
+        except:
+            raise Exception("Error, cannot open user_config.json")
 
     @staticmethod
     def encrypt_password(raw):
@@ -69,7 +73,7 @@ class UserManagement():
                 self.__user_config['new_commits'] = { 0 : commit}
                 json.dump(self.__user_config, f)
         except:
-            raise Exception("Error, cannot open repo_config.json")
+            raise Exception("Error, cannot open user_config.json")
 
     def add_new_commit(self, internal_id, commit_data):
         try:
@@ -77,7 +81,7 @@ class UserManagement():
                 self.__user_config['new_commits'][f"{internal_id}"] = commit_data
                 json.dump(self.__user_config, f)
         except:
-            raise Exception("Error, cannot open repo_config.json")
+            raise Exception("Error, cannot open user_config.json")
 
     def modify_new_commit(self, last_new_commit_id, commit_data):
         try:
@@ -85,7 +89,7 @@ class UserManagement():
                 self.__user_config['new_commits'][last_new_commit_id] = commit_data
                 json.dump(self.__user_config, f)
         except:
-            raise Exception("Error, cannot open repo_config.json")
+            raise Exception("Error, cannot open user_config.json")
 
     def get_last_new_commit(self):
         last_commit = self.__user_config['new_commits']['0']
@@ -104,10 +108,27 @@ class UserManagement():
                 self.__user_config['current_branch'] = new_branch
                 json.dump(self.__user_config, f)
         except:
-            raise Exception("Error, cannot open repo_config.json")
+            raise Exception("Error, cannot open user_config.json")
+
+    def reset_new_commits(self, branch_folder):
+        new_commits = self.get_user_data()["new_commits"]
+        initial_commit = None
+        for x in new_commits:
+            if x != "0":
+                commit_unique_id = new_commits[x]["unique_id"]
+                os.remove(os.path.join(branch_folder, commit_unique_id + ".tar.xz"))
+            else:
+                initial_commit = {"0" : new_commits[x]}
+        try:
+            with open(os.path.join(self.__config_folder, 'user_config.json'), 'w') as f:
+                self.__user_config['new_commits'] = initial_commit
+                json.dump(self.__user_config, f)
+        except:
+            raise Exception("Error, cannot open user_config.json")
 
     def is_in_main(self):
         return self.__user_config['current_branch'] == "main"
 
     def check_for_uncommited_files(self):
+        # return not
         return False
