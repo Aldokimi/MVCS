@@ -3,7 +3,7 @@ import shutil
 import uuid
 import lzma
 import tarfile
-import Repository
+from . import Repository
 import requests
 
 from helper import RepoManagement as RM
@@ -120,6 +120,9 @@ def undo(config_folder, repo_management, user_management):
     if len(user_management.get_user_data()["new_commits"]) == 1:
         ## Remove the last commit remotely
         # Delete the commit from the API
+        last_commit = repo_management.get_latest_commit(
+                user_management.get_user_data()["current_branch"]
+            )
         API_end_point = 'http://127.0.0.1:8000/api/commits/' + f'{last_commit["id"]}/'
         
         headers={
@@ -136,13 +139,10 @@ def undo(config_folder, repo_management, user_management):
         }
 
         response = requests.delete(API_end_point, json = commit_data, headers=headers, )
-        if response.status_code == 200:
+        if response.status_code == 204:
             # Delete the commit form configuration
             current_branch = user_management.get_user_data()["current_branch"]
-            last_commit = repo_management.get_latest_commit(
-                user_management.get_user_data()["current_branch"]
-            )["id"]
-            repo_management.delete_commit(current_branch, last_commit)
+            repo_management.delete_commit(current_branch, last_commit["id"])
         else:
             raise Exception("Error, couldn't delete the commit from the API")
 
@@ -163,12 +163,15 @@ def undo(config_folder, repo_management, user_management):
         # Update the repository
         update_repository(config_folder, repo_management, user_management)
 
-def update_repository(config_folder, repo_management, user_management):
+def update_repository(config_folder, repo_management, user_management, get_last_commit=None):
     # Delete the working directory
     repo_management.delete_working_directory()
 
     # Extract the last commit 
-    commit_data = user_management.get_last_new_commit()[1]
+    if not get_last_commit:
+        commit_data = user_management.get_last_new_commit()[1]
+    else:
+        commit_date = get_last_commit()
     commit_unique_id = commit_data["unique_id"]
     commit_file_name = os.path.join(
         config_folder, 

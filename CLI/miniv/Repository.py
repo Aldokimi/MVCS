@@ -74,6 +74,7 @@ class repo():
             user_data['email']         = email
             user_data['id']            = response.json()['user_id']
             user_data['password']      = UM.UserManagement.encrypt_password(password).decode("utf-8")
+            user_data['clone_url']     = self.__clone_url
         else:
             raise Exception("Error, wrong credentials, please try again!")
 
@@ -166,7 +167,7 @@ class repo():
                     raise Exception("Error happened during downloading the repo!")
 
     @staticmethod
-    def is_nonempty_tar_file(self, archive):
+    def is_nonempty_tar_file(archive):
         with tarfile.open(archive, "r") as tar:
             try:
                 file_content = tar.getmembers()

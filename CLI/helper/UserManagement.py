@@ -104,7 +104,7 @@ class UserManagement():
 
     def delete_new_commit(self, internal_id):
         new_commits = self.get_user_data()["new_commits"]
-        del new_commits[internal_id]
+        del new_commits[f"{internal_id}"]
         try:
             with open(os.path.join(self.__config_folder, 'user_config.json'), 'w') as f:
                 self.__user_config['new_commits'] = new_commits

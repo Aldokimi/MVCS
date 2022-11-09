@@ -73,9 +73,20 @@ class RepoManagement():
     def delete_commit(self, branch, commit_id):
         try:
             with open(self.__repo_config_file, 'w') as f:
-                commits = self.__repo_config['branches'][f'{branch}']['commits']
+                branch_data = self.get_branch_data(branch)
+                commits = self.__repo_config['branches'][f'{branch_data["id"]}']['commits']
                 del commits[f'{commit_id}']
-                self.__repo_config['branches'][f'{branch}']['commits'] = commits
+                self.__repo_config['branches'][f'{branch_data["id"]}']['commits'] = commits
+                json.dump(self.__repo_config, f)
+        except:
+            raise Exception("Error, cannot open repo_config.json")
+    
+    def update_commits(self, new_commits, branch_id):
+        try:
+            with open(self.__repo_config_file, 'w') as f:
+                commits = dict(self.get_repo_config()["branches"][branch_id]["commits"])
+                commits.update(new_commits)
+                self.__repo_config['branches'] = commits
                 json.dump(self.__repo_config, f)
         except:
             raise Exception("Error, cannot open repo_config.json")
@@ -115,6 +126,16 @@ class RepoManagement():
             with open(self.__repo_config_file, 'w') as f:
                 branch_id = branch_data['id']
                 del self.__repo_config['branches'][f'{branch_id}']
+                json.dump(self.__repo_config, f)
+        except:
+            raise Exception("Error, cannot open repo_config.json")
+    
+    def update_branches(self, new_branches):
+        try:
+            with open(self.__repo_config_file, 'w') as f:
+                branches = dict(self.get_repo_config()["branches"])
+                branches.update(new_branches)
+                self.__repo_config['branches'] = branches
                 json.dump(self.__repo_config, f)
         except:
             raise Exception("Error, cannot open repo_config.json")
