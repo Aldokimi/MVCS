@@ -96,6 +96,8 @@ def checkout_parser(subparsers):
 def diff_parser(subparsers):
     desc = 'Get the difference between two files'
     parser = subparsers.add_parser('diff', help=desc, description=(desc.capitalize()), aliases=['df'])
+    parser.add_argument('--of', help='The file name to apply diff to!', dest='file1')
+    parser.add_argument('--diff_repo', help='Get the diff of the whole repository!', action='store_true')
     parser.set_defaults(func=core.diff)
 
 

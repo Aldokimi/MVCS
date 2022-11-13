@@ -38,7 +38,7 @@ class merge():
             # Then we will merge the similar files into the new directory
             # Finally the working directory will be replaced with the new directory
 
-            # Create a new directory
+            # Create a test directory
             unique_test_name = uuid.uuid4().hex
             test_dir = os.path.join(self.__config_folder, unique_test_name)
             os.mkdir(test_dir, 0o777)
@@ -83,7 +83,7 @@ class merge():
                 shutil.move(file_to_move, new_directory)
 
             # Merge the common files into a new file inside the new directory
-            common_files = [item.split(f'{test_dir}{os.sep}')[1] for item in merge_branch if item not in new_files]
+            common_files = [item for item in merge_branch if item not in new_files]
             for file in common_files:
                 new_file = os.path.join(test_dir, file)
                 old_file = os.path.join(working_directory, file)
@@ -102,7 +102,11 @@ class merge():
 
             # Replace the working directory with the new directory
             self.__repo_management.delete_working_directory()
-            shutil.copytree(new_dir, self.__config_folder.split('.mvcs')[0], dirs_exist_ok=True) 
+            shutil.copytree(new_dir, self.__config_folder.split('.mvcs')[0], dirs_exist_ok=True)
+
+            # Delete the new and test directories
+            shutil.rmtree(new_directory)
+            shutil.rmtree(test_dir)
         
     def merge_files(self, old_file, new_file):
         try:
