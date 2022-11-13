@@ -147,3 +147,14 @@ class RepoManagement():
                     os.remove(file_name)
                 else:
                     shutil.rmtree(os.path.join(os.getcwd(), file_name))
+
+    def path_to_list(self, path):
+        result = []
+        try:
+            for current_path, _, files in os.walk(path):
+                for file in files:
+                    result.append(os.path.join(current_path, file).split(f'{path}{os.sep}')[1])
+        except Exception as e:
+            raise Exception(f"Error, wrong path, {e}")
+        return result
+

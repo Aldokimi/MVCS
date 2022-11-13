@@ -51,8 +51,9 @@ def checkout(args):
     repo_config_path= os.path.join(os.path.join(os.getcwd()), ".mvcs")
     repo_management = RM.RepoManagement(repo_config_path)
     user_management = UM.UserManagement(repo_config_path)
+    branch_name = str(args.branch_name) if args.branch_name else None
     try:
-        Branch.checkOut(args.branch_name, repo_config_path, repo_management, user_management)
+        Branch.checkOut(branch_name, repo_config_path, repo_management, user_management)
     except Exception as e:
         raise Exception(e)
 

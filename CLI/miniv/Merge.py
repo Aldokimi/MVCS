@@ -1,19 +1,16 @@
 
-from diff_match_patch import diff_match_patch
+import difflib
 import os
 import shutil
 import tarfile
+import uuid
 
-import requests
+from . import Repository
 
 from helper import RepoManagement as RM
 from helper import UserManagement as UM
 from helper import print_helper   as ph
 
-DIFFER = diff_match_patch()
-PRESERVED = 0
-DELETION = -1
-ADDITION = 1
 
 class merge():
     __branch = None
@@ -31,270 +28,153 @@ class merge():
             self.__merge_branches()
     
     def __merge_branches(self):
-        pass
+        if self.__user_mgt.get_user_data()["current_branch"] == self.__branch:
+            ph.err("You cannot merge with the same branch, please choose another branch!")
+        else:
+            # First we need to decompress the last commit from the specified branch into a test directory (this directory will be called new)
+            # Then we need to store the new files in a list and compare them to the current branch's files:
+            #       * The additional files from the new directory will be copied to a new directory 
+            #       * The additional files from the current branch will be kept
+            # Then we will merge the similar files into the new directory
+            # Finally the working directory will be replaced with the new directory
 
+            # Create a new directory
+            unique_test_name = uuid.uuid4().hex
+            test_dir = os.path.join(self.__config_folder, unique_test_name)
+            os.mkdir(test_dir, 0o777)
 
-    def __merge(source: str, target: str, base: str) -> str:
-        diff1_l = DIFFER.diff_main(base, source)
-        diff2_l = DIFFER.diff_main(base, target)
+            # Decompress the latest commit from the specified branch to a test directory
+            last_commit_id = self.__repo_management.get_latest_commit(self.__branch)["unique_id"]
+            branch_dir = os.path.join(self.__config_folder, self.__branch)
+            commit_file = os.path.join(branch_dir, f"{last_commit_id}.tar.xz")
 
-        diff1 = iter(diff1_l)
-        diff2 = iter(diff2_l)
+            if Repository.is_nonempty_tar_file(commit_file):
+                with tarfile.open(commit_file) as ccf:
+                    ccf.extractall(test_dir)
+                    try:
+                        path = os.path.join(test_dir, os.listdir(test_dir)[1])
+                        for filename in os.listdir(path):
+                            shutil.move(os.path.join(path, filename), os.path.join(test_dir, filename))
+                        os.rmdir(path)
+                    except Exception:
+                        raise Exception("Error happened during decompressing the files of the merge branch!")
 
+            # Store the files of the the merge branch, e.g:
+            merge_branch = self.__repo_management.path_to_list(test_dir)
+
+            # Store the working directory
+            working_directory = self.__repo_management.path_to_list(self.__config_folder.split('.mvcs')[0])
+
+            # Get additional files from the new directory of the merge branch
+            new_files = [item for item in merge_branch if item not in working_directory]
+
+            # Create the new directory and copy the additional files to the new directory
+            new_directory = os.path.join(self.__config_folder, f"{unique_test_name}_new")
+            os.mkdir(new_directory, 0o777)
+            for new_file in new_files:
+                file_to_move = os.path.join(test_dir, new_file)
+                new_dir = ""
+                new_files_path_list = os.path.normpath(file_to_move)
+                new_files_path_list = new_files_path_list.split(os.sep)
+                for i in new_files_path_list[:-1]:
+                    new_dir = os.path.join(new_dir, i)
+                    if not os.path.isdir(new_dir):
+                        os.mkdir(new_dir, 0o777)
+                shutil.move(file_to_move, new_directory)
+
+            # Merge the common files into a new file inside the new directory
+            common_files = [item.split(f'{test_dir}{os.sep}')[1] for item in merge_branch if item not in new_files]
+            for file in common_files:
+                new_file = os.path.join(test_dir, file)
+                old_file = os.path.join(working_directory, file)
+                merge_result = self.merge_files(old_file, new_file)
+                merge_file = os.path.join(new_directory, file)
+                new_dir = ""
+                new_files_path_list = os.path.normpath(merge_file)
+                new_files_path_list = new_files_path_list.split(os.sep)
+                for i in new_files_path_list[:-1]:
+                    new_dir = os.path.join(new_dir, i)
+                    if not os.path.isdir(new_dir):
+                        os.mkdir(new_dir, 0o777)
+
+                with open(merge_file, 'w') as _merged_file:
+                    _merged_file.write(merge_result)
+
+            # Replace the working directory with the new directory
+            self.__repo_management.delete_working_directory()
+            shutil.copytree(new_dir, self.__config_folder.split('.mvcs')[0], dirs_exist_ok=True) 
+        
+    def merge_files(self, old_file, new_file):
+        try:
+            with open(old_file) as old, open(new_file) as new:
+                old_lines = old.readlines()
+                new_lines = new.readlines()
+                
+                d = difflib.Differ()
+                diff = d.compare(old_lines, new_lines)
+                # print("\n".join(diff))
+
+                diff_list = list(diff)
+                # Now we have the list we can apply the set of rules
+
+                # The first 2 characters are the main key:
+                # [+ ] if the upper and the lower are empty we add this and we continue
+                # [+ ] and we have a sequence of + and - the we have a conflict and we surround the + and 1
+                # [- ] alone, we continue
+                # [  ] we just add it
+                i, composed_text, has_conflicts = 0, [], False
+                while i < len(diff_list):
+                    diff_line = diff_list[i]
+                    if diff_line[:2] == "  ":
+                        composed_text.append(diff_line[2:])
+                        i+=1
+                    else:
+                        pluses, minuses = [], []
+                        pluses.append(diff_line[2:]) if diff_line[:2] == "+ " else minuses.append(diff_line[2:])
+                        i+=1
+
+                        # Check the sequence of changes
+                        end_of_loop = False
+                        while i < len(diff_list) and not end_of_loop:
+                            diff_line = diff_list[i]
+                            # print(diff_line)
+                            if diff_line[:2] == "+ ":
+                                pluses.append(diff_line[2:])
+                            elif diff_line[:2] == "- ":
+                                minuses.append(diff_line[2:])
+                            elif diff_line[:2] == "? ":
+                                composed_text += pluses
+                                end_of_loop = True
+                            else:
+                                end_of_loop = True
+                                if (len(pluses) == 0 or len(minuses) == 0):
+                                    composed_text += pluses
+                                else:
+                                    has_conflicts = True
+                                    composed_text += self.__conflict_text(pluses, minuses)
+                                composed_text.append(diff_line[2:])
+                            i+=1
+
+                        if not end_of_loop:
+                            if (len(pluses) == 0 or len(minuses) == 0):
+                                composed_text += pluses
+                            else:
+                                has_conflicts = True
+                                composed_text += self.__conflict_text(pluses, minuses)
+
+                print(''.join(composed_text))
+                return (''.join(composed_text), has_conflicts)
+        except Exception as e: 
+            raise Exception("Error, cannot open comparison files: \n{}".format(e))
+
+    def __conflict_text(self, pluses, minuses):
         composed_text = []
-        source = next(diff1, None)
-        target = next(diff2, None)
-
-        while source is not None and target is not None:
-            source_status, source_text = source
-            target_status, target_text = target
-            if source_status == PRESERVED and target_status == PRESERVED:
-                '''
-                # Base is preserved for both source and target
-                '''
-                if len(source_text) > len(target_text):
-                    '''
-                    # Addition performed by target
-                    '''
-                    advance = True
-                    composed_text.append(target_text)
-                    _, (_, invariant) = DIFFER.diff_main(target_text, source_text)
-                    target = next(diff2, None)
-                    while invariant != '' and target is not None:
-                        '''
-                        # Apply target changes until invariant is preserved
-                        # target = next(diff2, None)
-                        '''
-                        target_status, target_text = target
-                        if target_status == DELETION:
-                            if len(target_text) > len(invariant):
-                                target_text = target_text[len(invariant):]
-                                invariant = ''
-                                target = (target_status, target_text)
-                            else:
-                                invariant = invariant[len(target_text):]
-                                target = next(diff2, None)
-                        elif target_status == ADDITION:
-                            composed_text.append(target_text)
-                            target = next(diff2, None)
-                        else:
-                            '''
-                            # Recompute invariant and advance source
-                            '''
-                            if len(invariant) > len(target_text):
-                                assert invariant[:len(target_text)] == target_text
-                                source = (
-                                    source_status, invariant[len(target_text):])
-                                composed_text.append(target_text)
-                                invariant = ''
-                                advance = False
-                                target = next(diff2, None)
-                            else:
-                                target_text = target_text[len(invariant):]
-                                composed_text.append(invariant)
-                                invariant = ''
-                                target = (target_status, target_text)
-                    if advance:
-                        source = next(diff1, None)
-                elif len(source_text) < len(target_text):
-                    '''
-                    # Addition performed by source
-                    '''
-                    advance = True
-                    composed_text.append(source_text)
-                    _, (_, invariant) = DIFFER.diff_main(source_text, target_text)
-                    source = next(diff1, None)
-                    while invariant != '' and target is not None:
-                        '''
-                        # Apply source changes until invariant is preserved
-                        '''
-                        source_status, source_text = source
-                        if source_status == DELETION:
-                            if len(source_text) > len(invariant):
-                                source_text = source_text[len(invariant):]
-                                invariant = ''
-                                source = (source_status, source_text)
-                            else:
-                                invariant = invariant[len(source_text):]
-                                source = next(diff1, None)
-                        elif source_status == ADDITION:
-                            composed_text.append(source_text)
-                            source = next(diff1, None)
-                        else:
-                            '''
-                            # Recompute invariant and advance source
-                            # invariant = invariant[:len(source_text)]
-                            '''
-                            if len(invariant) > len(source_text):
-                                assert invariant[:len(source_text)] == source_text
-                                target = (
-                                    target_status, invariant[len(source_text):])
-                                composed_text.append(source_text)
-                                invariant = ''
-                                advance = False
-                                source = next(diff1, None)
-                            else:
-                                source_text = source_text[len(invariant):]
-                                composed_text.append(invariant)
-                                invariant = ''
-                                source = (source_status, source_text)
-                    if advance:
-                        target = next(diff2, None)
-                else:
-                    '''
-                    # Source and target are equal
-                    '''
-                    composed_text.append(source_text)
-                    source = next(diff1, None)
-                    target = next(diff2, None)
-            elif source_status == ADDITION and target_status == PRESERVED:
-                '''
-                # Source is adding text
-                '''
-                composed_text.append(source_text)
-                source = next(diff1, None)
-            elif source_status == PRESERVED and target_status == ADDITION:
-                '''
-                # Target is adding text
-                '''
-                composed_text.append(target_text)
-                target = next(diff2, None)
-            elif source_status == DELETION and target_status == PRESERVED:
-                if len(target_text) > len(source_text):
-                    '''
-                    # Take target text, remove the corresponding part from source
-                    '''
-                    target_text = target_text[len(source_text):]
-                    '''
-                    # composed_text.append(target_text)
-                    '''
-                    '''
-                    # source = diff1.pop(0)
-                    '''
-                    target = (target_status, target_text)
-                    source = next(diff1, None)
-                elif len(target_text) < len(source_text):
-                    source_text = source_text[len(target_text):]
-                    source = (source_status, source_text)
-                    target = next(diff2, None)
-            elif source_status == PRESERVED and target_status == DELETION:
-                if len(source_text) > len(target_text):
-                    '''
-                    # Take source text, remove the corresponding part from target
-                    '''
-                    source_text = source_text[len(target_text):]
-                    source = (source_status, source_text)
-                    target = next(diff2, None)
-                elif len(source_text) < len(target_text):
-                    '''
-                    # Advance to next source
-                    '''
-                    target_text = target_text[len(source_text):]
-                    target = (target_status, target_text)
-                    source = next(diff1, None)
-            elif source_status == DELETION and target_status == ADDITION:
-                '''
-                # Merge conflict
-                '''
-                composed_text.append('<<<<<<< ++ {0} '.format(target_text))
-                composed_text.append('======= -- {0} '.format(source_text))
-                composed_text.append('>>>>>>>')
-                source = next(diff1, None)
-                target = next(diff2, None)
-                if target is not None:
-                    target_status, target_text = target
-                    if target_text.startswith(source_text):
-                        target_text = target_text[len(source_text):]
-                        target = (target_status, target_text)
-            elif source_status == ADDITION and target_status == DELETION:
-                '''
-                # Merge conflict
-                '''
-                composed_text.append('<<<<<<< ++ {0} '.format(source_text))
-                composed_text.append('======= -- {0} '.format(target_text))
-                composed_text.append('>>>>>>>')
-                source = next(diff1, None)
-                target = next(diff2, None)
-                if source is not None:
-                    source_status, source_text = source
-                    if source_text.startswith(target_text):
-                        source_text = source_text[len(target_text):]
-                        source = (source_status, source_text)
-            elif source_status == ADDITION and target_status == ADDITION:
-                '''
-                # Possible merge conflict
-                '''
-                if len(source_text) >= len(target_text):
-                    if source_text.startswith(target_text):
-                        composed_text.append(source_text)
-                    else:
-                        '''
-                        # Merge conflict
-                        '''
-                        composed_text.append('<<<<<<< ++ {0} '.format(source_text))
-                        composed_text.append('======= ++ {0} '.format(target_text))
-                        composed_text.append('>>>>>>>')
-                else:
-                    if target_text.startswith(source_text):
-                        composed_text.append(target_text)
-                    else:
-                        '''
-                        # Merge conflict
-                        '''
-                        composed_text.append('<<<<<<< ++ {0} '.format(source_text))
-                        composed_text.append('======= ++ {0} '.format(target_text))
-                        composed_text.append('>>>>>>>')
-                source = next(diff1, None)
-                target = next(diff2, None)
-
-            elif source_status == DELETION and target_status == DELETION:
-                '''
-                # Possible merge conflict
-                '''
-                merge_conflict = False
-                if len(source_text) > len(target_text):
-                    if source_text.startswith(target_text):
-                        '''
-                        # Peek target to delete preserved text
-                        '''
-                        source_text = source_text[len(target_text):]
-                        source = (source_status, source_text)
-                        target = next(diff2, None)
-                    else:
-                        merge_conflict = True
-                elif len(target_text) > len(source_text):
-                    if target_text.startswith(source_text):
-                        target_text = target_text[len(source_text):]
-                        target = (target_status, target_text)
-                        source = next(diff1, None)
-                    else:
-                        merge_conflict = True
-                else:
-                    if target_text == source_text:
-                        '''
-                        # Both source and target remove the same text
-                        '''
-                        source = next(diff1, None)
-                        target = next(diff2, None)
-                    else:
-                        merge_conflict = True
-                if merge_conflict:
-                    composed_text.append('<<<<<<< -- {0} '.format(source_text))
-                    composed_text.append('======= -- {0} '.format(target_text))
-                    composed_text.append('>>>>>>>')
-
-        while source is not None:
-            source_status, source_text = source
-            assert source_status == ADDITION or source_status == PRESERVED
-            if source_status == ADDITION:
-                composed_text.append(source_text)
-            source = next(diff1, None)
-
-        while target is not None:
-            target_status, target_text = target
-            assert target_status == ADDITION or source_status == PRESERVED
-            if target_status == ADDITION:
-                composed_text.append(target_text)
-            target = next(diff2, None)
-
-        return ''.join(composed_text)
+        new_changes_line = "\n>>>>>>>>>>>>>>>>> New changes +++\n"
+        composed_text.append(new_changes_line)
+        composed_text += pluses
+        middle_line = "\n================= +++\n"
+        composed_text.append(middle_line)
+        composed_text += minuses
+        old_changes_line = "\n<<<<<<<<<<<<<<<<< Old changes ---\n"
+        composed_text.append(old_changes_line)
+        return composed_text

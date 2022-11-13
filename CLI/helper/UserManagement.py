@@ -91,14 +91,20 @@ class UserManagement():
         except:
             raise Exception("Error, cannot open user_config.json")
 
-    def get_last_new_commit(self):
+    def get_last_new_commit(self, branch_id=None):
         last_commit = self.__user_config['new_commits']['0']
         commit_internal_id = 0
-
-        for commit in self.__user_config['new_commits']:
-            if int(commit) > commit_internal_id:
-                last_commit = self.__user_config['new_commits'][commit]
-                commit_internal_id = int(commit)
+        if branch_id:
+            for commit in self.__user_config['new_commits']:
+                if int(commit) >= commit_internal_id and\
+                     int(self.__user_config['new_commits'][commit]["branch"]) == branch_id:
+                    last_commit = self.__user_config['new_commits'][commit]
+                    commit_internal_id = int(commit)
+        else:
+            for commit in self.__user_config['new_commits']:
+                if int(commit) > commit_internal_id:
+                    last_commit = self.__user_config['new_commits'][commit]
+                    commit_internal_id = int(commit)
 
         return (commit_internal_id, last_commit)
 

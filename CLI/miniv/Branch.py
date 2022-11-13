@@ -4,6 +4,8 @@ import tarfile
 
 import requests
 
+from . import Repository
+
 from helper import RepoManagement as RM
 from helper import UserManagement as UM
 from helper import print_helper   as ph
@@ -57,7 +59,7 @@ class branch():
         last_commit_id = self.__repo_management.get_latest_commit('main')['unique_id']
         try:
             shutil.copy2(
-                os.path.join(self.__config_folder, f"main/{last_commit_id}.tar.xz"),
+                os.path.join(self.__config_folder, f"main{os.sep}{last_commit_id}.tar.xz"),
                 new_branch_folder
             )
         except Exception as e:
@@ -157,46 +159,54 @@ class branch():
 
 
 def checkOut(branch_name, config_folder, repo_management, user_management):
+    if not branch_name:
+        raise Exception("Error, branch name is not passed!")
 
     try:
-        # Trying to get the branch, so if the branch doesn't exists and exception will be raised here
-        branch_data = repo_management.get_branch_data(branch_name=branch_name)
-
-        # Delete the working dir
-        repo_management.delete_working_directory()
-
         # Check if we are checking out to the same branch
         if branch_name == user_management.get_user_data()['current_branch']:
             raise Exception('Error, cannot checkout to the same branch')
 
+        # Trying to get the branch, so if the branch doesn't exists and exception will be raised here
+        branch_data = repo_management.get_branch_data(branch_name=branch_name)
+
+        # Delete the working dir and update the current branch in the user_config.json
+        repo_management.delete_working_directory()
         user_management.update_current_branch(branch_name)
         
         # Move the files from the last commit ot the working directory
-        branch_folder = os.path.join(config_folder, "main")
-        commit_folder = os.path.join(branch_folder, os.listdir(branch_folder)[0])
+        if len(user_management.get_user_data()["new_commits"]) == 1:
+            last_commit_id = repo_management.get_latest_commit(branch_name)["unique_id"]
+        else:
+            branch_id = repo_management.get_branch_date(
+                branch_name=user_management.get_user_data()["current_branch"])["id"]
+            last_commit_id = user_management.get_last_new_commit(branch_id)["unique_id"]
+
+        branch_folder = os.path.join(config_folder, user_management.get_user_data()["current_branch"])
+        commit_folder = os.path.join(branch_folder, f'{last_commit_id}.tar.xz')
         working_dir = config_folder.split('.mvcs')[0]
-        print(os.path.exists(commit_folder))
+        
         # Extract the last commit file on main into the working directory
-        with tarfile.open(commit_folder) as ccf:
-            ccf.extractall(working_dir)
-            
-            try:
-                # Check if the extraction was successful
-                last_commit_id = repo_management.get_latest_commit('main')['unique_id']
-                extract_commit_folder = os.path.join(working_dir, last_commit_id)
-                if not os.path.exists(extract_commit_folder):
-                    raise Exception("Error, couldn't extract the last commit into the working directory!")
+        if Repository.repo.is_nonempty_tar_file(commit_folder):
+            with tarfile.open(commit_folder) as ccf:
+                ccf.extractall(working_dir)
+                
+                try:
+                    # Check if the extraction was successful
+                    extract_commit_folder = os.path.join(working_dir, last_commit_id)
+                    if not os.path.exists(extract_commit_folder):
+                        raise Exception("Error, couldn't extract the last commit into the working directory!")
 
-                # Move all the files from the extracted commit folder to the working directory
-                for filename in os.listdir(extract_commit_folder):
-                    shutil.move(
-                        os.path.join(extract_commit_folder, filename), 
-                        os.path.join(working_dir, filename)
-                    )
-                os.rmdir(extract_commit_folder)
+                    # Move all the files from the extracted commit folder to the working directory
+                    for filename in os.listdir(extract_commit_folder):
+                        shutil.move(
+                            os.path.join(extract_commit_folder, filename), 
+                            os.path.join(working_dir, filename)
+                        )
+                    os.rmdir(extract_commit_folder)
 
-            except Exception:
-                raise Exception("Error happened during extracting the repo!")
+                except Exception:
+                    raise Exception("Error happened during extracting the repo!")
 
-    except Exception:
-        raise Exception("Error, there is no branch with this name")
+    except Exception as e:
+        raise Exception(f"Error, {e}")

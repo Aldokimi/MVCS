@@ -89,7 +89,7 @@ def update_parser(subparsers):
 def checkout_parser(subparsers):
     desc = 'Checkout to another branch'
     parser = subparsers.add_parser('checkout', help=desc, description=(desc.capitalize()), aliases=['ch'])
-    parser.add_argument('--to', dest='branch_name', help='The branch destination where to switch to!')
+    parser.add_argument('--to', help='The branch destination where to switch to!', dest='branch_name')
     parser.set_defaults(func=core.checkout)
 
 
