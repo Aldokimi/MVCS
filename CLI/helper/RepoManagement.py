@@ -152,8 +152,10 @@ class RepoManagement():
         result = []
         try:
             for current_path, _, files in os.walk(path):
+                
                 for file in files:
-                    result.append(os.path.join(current_path, file).split(f'{path}{os.sep}')[1])
+                    new_item = os.path.join(current_path, file)
+                    result.append(new_item.split(f'{path}')[1])
         except Exception as e:
             raise Exception(f"Error, wrong path, {e}")
         return result

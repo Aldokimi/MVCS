@@ -5,6 +5,7 @@ import tarfile
 import requests
 
 from . import Repository
+from . import Diff
 
 from helper import RepoManagement as RM
 from helper import UserManagement as UM
@@ -170,6 +171,11 @@ def checkOut(branch_name, config_folder, repo_management, user_management):
         # Trying to get the branch, so if the branch doesn't exists and exception will be raised here
         branch_data = repo_management.get_branch_data(branch_name=branch_name)
 
+        # Check if we have un committed changes on the current directory
+        diffs, new_files = Diff.diff_repo(config_folder, repo_management, user_management)
+        if diffs or len(new_files) != 0:
+            raise Exception("Error, you have uncommitted changes, please commit your changes first!")
+
         # Delete the working dir and update the current branch in the user_config.json
         repo_management.delete_working_directory()
         user_management.update_current_branch(branch_name)
@@ -178,9 +184,14 @@ def checkOut(branch_name, config_folder, repo_management, user_management):
         if len(user_management.get_user_data()["new_commits"]) == 1:
             last_commit_id = repo_management.get_latest_commit(branch_name)["unique_id"]
         else:
-            branch_id = repo_management.get_branch_date(
+            branch_id = repo_management.get_branch_data(
                 branch_name=user_management.get_user_data()["current_branch"])["id"]
-            last_commit_id = user_management.get_last_new_commit(branch_id)["unique_id"]
+            last_commit_id, last_commit = user_management.get_last_new_commit(branch_id)
+            if last_commit_id == 0:
+                last_commit_id = repo_management.get_latest_commit(
+                    user_management.get_user_data()["current_branch"])["unique_id"]
+            else:
+                last_commit_id = last_commit["unique_id"]
 
         branch_folder = os.path.join(config_folder, user_management.get_user_data()["current_branch"])
         commit_folder = os.path.join(branch_folder, f'{last_commit_id}.tar.xz')
@@ -191,22 +202,23 @@ def checkOut(branch_name, config_folder, repo_management, user_management):
             with tarfile.open(commit_folder) as ccf:
                 ccf.extractall(working_dir)
                 
-                try:
-                    # Check if the extraction was successful
-                    extract_commit_folder = os.path.join(working_dir, last_commit_id)
-                    if not os.path.exists(extract_commit_folder):
-                        raise Exception("Error, couldn't extract the last commit into the working directory!")
+                # try:
+                #     # Check if the extraction was successful
+                #     extract_commit_folder = working_dir
+                #     # os.path.join(working_dir, last_commit_id)
+                #     # if not os.path.exists(extract_commit_folder):
+                #     #     raise Exception("Error, couldn't extract the last commit into the working directory!")
 
-                    # Move all the files from the extracted commit folder to the working directory
-                    for filename in os.listdir(extract_commit_folder):
-                        shutil.move(
-                            os.path.join(extract_commit_folder, filename), 
-                            os.path.join(working_dir, filename)
-                        )
-                    os.rmdir(extract_commit_folder)
+                #     # Move all the files from the extracted commit folder to the working directory
+                #     for filename in os.listdir(extract_commit_folder):
+                #         shutil.move(
+                #             os.path.join(extract_commit_folder, filename), 
+                #             os.path.join(working_dir, filename)
+                #         )
+                #     os.rmdir(extract_commit_folder)
 
-                except Exception:
-                    raise Exception("Error happened during extracting the repo!")
+                # except Exception:
+                #     raise Exception("Error happened during extracting the repo!")
 
     except Exception as e:
         raise Exception(f"Error, {e}")

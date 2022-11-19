@@ -157,14 +157,14 @@ class repo():
         if self.is_nonempty_tar_file(commit_folder):
             with tarfile.open(commit_folder) as ccf:
                 ccf.extractall(working_dir)
-                try:
-
-                    path = os.path.join(working_dir, os.listdir(working_dir)[1])
-                    for filename in os.listdir(path):
-                        shutil.move(os.path.join(path, filename), os.path.join(working_dir, filename))
-                    os.rmdir(path)
-                except Exception:
-                    raise Exception("Error happened during downloading the repo!")
+                # try:
+                #     path = os.path.join(working_dir, os.listdir(working_dir)[1])
+                #     print(os.listdir(working_dir))
+                #     for filename in os.listdir(path):
+                #         shutil.move(os.path.join(path, filename), os.path.join(working_dir, filename))
+                #     os.rmdir(path)
+                # except Exception:
+                #     raise Exception("Error happened during downloading the repo!")
 
     @staticmethod
     def is_nonempty_tar_file(archive):
