@@ -29,7 +29,7 @@ def commit_parser(subparsers):
     
     info_group = parser.add_argument_group('commit info')      
     info_group.add_argument('-si', '--show-info', 
-                help='Information about the commit with the given number', dest='info', action='store_true')
+                help='Information about the commit with the given number', dest='info')
 
     create_group = parser.add_argument_group('create commit')
     create_group.add_argument('-c', '--create', help='Commit message', dest='create')
@@ -61,6 +61,9 @@ def branch_parser(subparsers):
         'or another specified branch (mg branch -rn branch_name new_name)',
         dest='rename_b'
     )
+
+    get_current_group = branch_parser.add_argument_group('create branches')
+    get_current_group.add_argument( '-cu', '--current',help='get the current branch', action='store_true')
 
     branch_parser.set_defaults(func=core.branches_handler)
 

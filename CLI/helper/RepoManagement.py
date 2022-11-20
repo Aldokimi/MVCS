@@ -2,6 +2,7 @@ import os
 import json
 import shutil
 
+from . import print_helper as ph
 from datetime import datetime
 
 class RepoManagement():
@@ -37,7 +38,8 @@ class RepoManagement():
         if found:
             return target_branch
         else:
-            raise Exception("Error, there is not branch with name{}!".format(branch_name))
+            ph.err("Error, there is not branch with name {}!".format(branch_name))
+            return None
 
     def get_latest_commit(self, branch_name):
         '''
@@ -45,6 +47,8 @@ class RepoManagement():
         '''
         for branch in self.__repo_config['branches'].values():
             if branch['name'] == branch_name:
+                if len(branch['commits']) == 0:
+                    return None
                 latest_commit = list(branch['commits'].values())[0]
                 for commit in branch['commits'].values():
                     t1 = datetime.strptime(latest_commit['date_created'], '%Y-%m-%dT%H:%M:%S.%fZ')
@@ -74,6 +78,9 @@ class RepoManagement():
         try:
             with open(self.__repo_config_file, 'w') as f:
                 branch_data = self.get_branch_data(branch)
+                if not branch_data:
+                    raise Exception(
+                        "Error, couldn't get branch data while renaming the branch!")
                 commits = self.__repo_config['branches'][f'{branch_data["id"]}']['commits']
                 del commits[f'{commit_id}']
                 self.__repo_config['branches'][f'{branch_data["id"]}']['commits'] = commits
@@ -115,7 +122,11 @@ class RepoManagement():
     def rename_branch(self, old_name, new_name):
         try:
             with open(self.__repo_config_file, 'w') as f:
-                branch_id = self.get_branch_data(branch_name=old_name)['id']
+                branch_data = self.get_branch_data(branch_name=old_name)
+                if not branch_data:
+                    raise Exception(
+                        "Error, couldn't get branch data while renaming the branch!")
+                branch_id = branch_data['id']
                 self.__repo_config['branches'][f'{branch_id}']['name'] = new_name
                 json.dump(self.__repo_config, f)
         except:
@@ -152,7 +163,6 @@ class RepoManagement():
         result = []
         try:
             for current_path, _, files in os.walk(path):
-                
                 for file in files:
                     new_item = os.path.join(current_path, file)
                     result.append(new_item.split(f'{path}')[1])

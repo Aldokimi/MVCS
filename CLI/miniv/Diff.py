@@ -27,17 +27,20 @@ class diff():
             
         if self.__file1:
             self.__file1 = str(self.__file1)
-            self.__file2 = self.__get_file2()
+            test_dir, self.__file2 = self.__get_file2()
         else:
             raise Exception('Error during running diff, wrong arguments!')
 
         if self.__file2:
             self.__file1 = os.path.join(self.__config_folder.split('.mvcs')[0], self.__file1)
-            diff = preform_diff(self.__file1, self.__file2)
-            if len(diff) == 0:
-                ph.warn("This file is not changed, of file doesn't exist")
+            diff = preform_diff(self.__file1, self.__file2, diff_only=True)
+            if not diff:
+                ph.ok(" This file is not changed, or file doesn't exist")
             else:
-                ph.ok(''.join(diff))
+                ph.warn(" You have some changes one the file(s): ")
+                ph.msg("\n  ➜  " + ''.join(diff))
+            
+            shutil.rmtree(test_dir)
         else:
             ph.err(f"Error, there is not file with name {self.__file1}")
 
@@ -55,35 +58,33 @@ class diff():
         commit_file = os.path.join(
             branch_dir, f"{last_commit_id}.tar.xz")
 
-        if Repository.is_nonempty_tar_file(commit_file):
-            with tarfile.open(commit_file) as ccf:
-                ccf.extractall(test_dir)
-                try:
-                    path = os.path.join(test_dir, os.listdir(test_dir)[1])
-                    for filename in os.listdir(path):
-                        shutil.move(os.path.join(path, filename), os.path.join(test_dir, filename))
-                    os.rmdir(path)
-                except Exception:
-                    raise Exception("Error happened during decompressing the files of the merge branch!")
+        if Repository.repo.is_nonempty_tar_file(commit_file):
+            try:
+                with tarfile.open(commit_file) as ccf:
+                    ccf.extractall(test_dir)
+            except Exception as e:
+                raise Exception(e)
         else:
             shutil.rmtree(test_dir)
             return None
 
         for file in os.listdir(test_dir):
             if file == self.__file1:
-                shutil.rmtree(test_dir)
-                return os.path.join(test_dir, file)
+                return test_dir, os.path.join(test_dir, file)
 
         shutil.rmtree(test_dir)
         return None
 
     def __print_diff_repo(self):
-        diffs, new_files = self.diff_repo(self.__config_folder, self.__repo_management, self.__user_mgt)
+        diffs, new_files = diff_repo(self.__config_folder, self.__repo_management, self.__user_mgt)
         if len(new_files) != 0:
-            ph.msg("You have new new files: \n")
-            for new_file in new_files: ph.ok(f"+++ {new_file}\n")
+            ph.warn(" You have new new files: ")
+            for new_file in new_files:
+                ph.msg(f"\n  ➜  {new_file}\n")
         if diffs:
-            for file, diff  in diffs: ph.ok(f"+++ {file}: \n\n {diff}")
+            ph.warn(" You have some changed files: ")
+            for file, diff  in diffs.items():
+                ph.msg(f"\n  ➜  {file} : \n\t {diff}")
         else:
             ph.warn("There are no changes in the repository!")
 
@@ -96,13 +97,25 @@ def diff_repo(config_folder, repo_management, user_mgt):
     test_dir = os.path.join(config_folder, unique_test_name)
     os.mkdir(test_dir, 0o777)
 
-    # Decompress the latest commit from the specified branch to a test directory
+    # Get the commit ID
     if len(user_mgt.get_user_data()["new_commits"]) == 1:
-        last_commit_id = repo_management.get_latest_commit(
-            user_mgt.get_user_data()["current_branch"])["unique_id"]
+        branch_data = repo_management.get_branch_data(
+                branch_name = user_mgt.get_user_data()["current_branch"])
+        if not branch_data:
+            raise Exception(
+                "Error, couldn't get branch data while renaming the branch!")
+        if len(branch_data["commits"]) == 0:
+                return None, new_files
+        else:
+            last_commit_id = repo_management.get_latest_commit(
+                user_mgt.get_user_data()["current_branch"])["unique_id"]
     else:
-        branch_id = repo_management.get_branch_data(
-            branch_name=user_mgt.get_user_data()["current_branch"])["id"]
+        branch_data = repo_management.get_branch_data(
+            branch_name=user_mgt.get_user_data()["current_branch"])
+        if not branch_data:
+            raise Exception(
+                "Error, couldn't get branch data while renaming the branch!")
+        branch_id = branch_data["id"]
         last_commit_id, last_commit = user_mgt.get_last_new_commit(branch_id)
         if last_commit_id == 0:
             last_commit_id = repo_management.get_latest_commit(
@@ -112,27 +125,22 @@ def diff_repo(config_folder, repo_management, user_mgt):
 
     branch_dir = os.path.join(
         config_folder, user_mgt.get_user_data()["current_branch"])
-
     commit_file = os.path.join(
         branch_dir, f"{last_commit_id}.tar.xz")
 
-    test_branch_list = repo_management.path_to_list(test_dir)
-
+    # Extract commit to the test directory    
     if Repository.repo.is_nonempty_tar_file(commit_file):
         with tarfile.open(commit_file) as ccf:
             ccf.extractall(test_dir)
-            # try:
-            #     path = os.path.join(test_dir, os.listdir(test_dir)[1])
-            #     for filename in os.listdir(path):
-            #         shutil.move(os.path.join(path, filename), os.path.join(test_dir, filename))
-            #     os.rmdir(path)
-            # except Exception:
-            #     raise Exception("Error happened during decompressing the files of the merge branch!")
 
-    # Store the files of the branch and the working directory
+    test_branch_list = [item.split(os.sep)[1] for item in repo_management.path_to_list(test_dir)]
+
+    # print(test_branch_list)
+    new_files = [item for item in working_branch_list if\
+        item not in test_branch_list and ".mvcs" not in item
+    ]
 
     # Get new and common files
-    new_files = [item for item in test_branch_list if item not in working_branch_list]
     common_files = [item for item in working_branch_list if item not in new_files]
 
     if len(new_files) != 0: has_new_change = True
@@ -155,7 +163,7 @@ def diff_repo(config_folder, repo_management, user_mgt):
         shutil.rmtree(test_dir)
         return None, new_files
 
-def preform_diff(file1, file2):
+def preform_diff(file1, file2, diff_only=False):
     try:
         with open(file2) as old, open(file1) as new:
             old_lines = old.readlines()
@@ -165,13 +173,14 @@ def preform_diff(file1, file2):
             diff = d.compare(old_lines, new_lines)
             diff_list = list(diff)
             
+            if diff_only: return diff_list
+            
             i, composed_text = 0, []
             while i < len(diff_list):
                 diff_line = diff_list[i]
                 if diff_line[:2] != "  ":
                     composed_text.append(diff_line[2:])
                 i+=1
-            # ph.ok(''.join(composed_text))
             return composed_text
     except Exception as e:
         return []

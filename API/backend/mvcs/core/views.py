@@ -1,4 +1,4 @@
-import lzma
+import lzma, sys
 import os, shutil, subprocess
 import tarfile
 import uuid
@@ -24,6 +24,7 @@ class RegistrationView(APIView):
             serializer.save()
             path = os.path.join("/home/mvcs/", serializer.validated_data['username'] + '/')
             os.mkdir(path)
+            os.system(f"chown -R mvcs:mvcs {path}")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -128,6 +129,7 @@ class RepositoryList(APIView):
             path = os.path.join(
                 "/home/mvcs/" + repo.owner.username + '/', repositories.validated_data['name'])
             os.mkdir(path)
+            os.system(f"chown -R mvcs:mvcs {path}")
             
             ## Create a new branch called main which have a commit inside it
             # Create the main branch
@@ -143,8 +145,10 @@ class RepositoryList(APIView):
                     "/home/mvcs/" + repo.owner.username + '/' + repo.name, 
                     branch_data.validated_data['name'])
                 os.mkdir(path_to_branch)
+                os.system(f"chown -R mvcs:mvcs {path_to_branch}")
             else:
                 os.rmdir(path)
+                os.system(f"chown -R mvcs:mvcs {path}")
                 return Response(branch_data.errors, status=status.HTTP_400_BAD_REQUEST)
 
             try:

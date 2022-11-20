@@ -1,6 +1,6 @@
 import os
 
-from miniv import Repository, Commit, Branch, Upload
+from miniv import Repository, Commit, Branch, Upload, Status, Diff
 
 from helper import RepoManagement as RM
 from helper import UserManagement as UM
@@ -21,7 +21,10 @@ you can user for this `miniv repo --create name_of_the_new_repo`
         raise Exception(e)
 
 def status(args):
-    print("status")
+    try:
+        Status.status(args)
+    except Exception as e:
+        raise Exception(e)
 
 def commits_handler(args):
     try:
@@ -58,7 +61,10 @@ def checkout(args):
         raise Exception(e)
 
 def diff(args):
-    print("diff")
+    try:
+        Diff.diff(args)
+    except Exception as e:
+        raise Exception(e)
 
 def undo(args):
     repo_config_path= os.path.join(os.path.join(os.getcwd()), ".mvcs")

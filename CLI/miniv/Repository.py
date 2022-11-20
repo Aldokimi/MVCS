@@ -33,7 +33,8 @@ class repo():
             else:
                 if os.path.exists(repo_path):
                     shutil.rmtree(repo_path)
-                raise Exception("Error, there is already a directory with the same repo name!")
+                ph.err("Error, there is already a directory with the same repo name!")
+                return
 
             # create the config folder path
             self.__config_folder = os.path.join(repo_path, ".mvcs")
@@ -43,12 +44,22 @@ class repo():
             else:
                 if not os.path.exists(repo_path):
                     shutil.rmtree(repo_path)
-                raise Exception("Error, there already exists a config directory (you are already in a repository)!")
+                ph.err("Error, there already exists a config directory (you are already in a repository)!")
+                return
         else:
-            raise Exception("Error: Wrong input, please clone repository or create a new one!")
+            ph.err("Error, wrong input, please clone repository or create a new one!")
+            return
 
         if self.__clone_url:
-            self.clone()
+            try:
+                self.clone()
+                user = self.__clone_url.split('@')[0]
+                if self.__UM.check_ssh(host=user, user=user):
+                    ph.err("Error, wrong clone URL, please try check your URL again!")
+            except Exception as e:
+                if os.path.exists(repo_path):
+                    shutil.rmtree(repo_path)
+
         elif self.__create_request:
             self.create()
 
@@ -58,7 +69,8 @@ class repo():
         '''
         # Get email and password from consol
         user_data = {}
-        ph.msg("Please login into your account: ")
+        ph.msg(ph.green("\nPlease login into your account: "))
+
         email = str(input("Email: "))
         password = str(getpass(prompt='Password: '))
         
@@ -66,6 +78,15 @@ class repo():
         response = requests.post(
             'http://127.0.0.1:8000/api/login/', 
             json = {"email":f"{email}", "password": f"{password}"})
+
+        if response.status_code != 200:
+            ph.msg(ph.red("You may entered the password or the email wrong, please try again!"))
+            email = str(input("Email: "))
+            password = str(getpass(prompt='Password: '))
+            response = requests.post(
+                'http://127.0.0.1:8000/api/login/', 
+                json = {"email":f"{email}", "password": f"{password}"})
+
 
         if response.status_code == 200:
             user_data['refresh_token'] = (response.json()['refresh'])
@@ -76,7 +97,8 @@ class repo():
             user_data['password']      = UM.UserManagement.encrypt_password(password).decode("utf-8")
             user_data['clone_url']     = self.__clone_url
         else:
-            raise Exception("Error, wrong credentials, please try again!")
+            ph.err("Error, wrong credentials, please try to clone again!")
+            return
 
         return user_data
 
@@ -105,7 +127,6 @@ class repo():
         in the main branch to .mvcs/main/ and decompress it to the base dir and
         decompress the commit folder into the working directory.
         '''
-        user      = self.__clone_url.split('@')[0]
         host      = self.__clone_url.split('@')[1]
         repo_name = host.rsplit('/', 2)[-2:][1]
         repo_owner= host.rsplit('/', 2)[-2:][0]
@@ -115,9 +136,6 @@ class repo():
         user_data = self.login()
         self.create_user_configuration(user_data)
         self.__UM = UM.UserManagement(self.__config_folder)
-        
-        if self.__UM.check_ssh(host=user, user=user):
-            raise Exception("Error, wrong clone URL!")
 
         # Creating repo_config.json
         repo_config_file = os.path.join(self.__config_folder, "repo_config.json")
@@ -141,12 +159,22 @@ class repo():
         Download the compressed folder of the last commit 
         in the main branch to .mvcs/main/ and decompress it to the base dir
         '''
+        ph.msg(ph.blue("\nDownloading the data: \n"))
         try:
-            p = subprocess.run(['scp', '-r', f'{self.__clone_url}/main/', f'{self.__UM.fix_path(self.__config_folder)}'])
-            if p.returncode != 0 :
-                raise Exception("Error, Downloading repo data failed!")
+            branches = repo_management.get_repo_config()["branches"]
+            for branch_id in branches:
+                branch_name = branches[branch_id]["name"]
+                p = subprocess.run(
+                    [
+                        'scp', '-r', 
+                        f'{self.__clone_url}/{branch_name}/', 
+                        f'{self.__UM.fix_path(self.__config_folder)}'
+                    ]
+                )
+                if p.returncode != 0 :
+                    raise Exception("Error, Downloading repo data failed!")
         except subprocess.CalledProcessError or p.returncode != 0:
-            raise Exception("Error, wrong clone URL!")
+            raise Exception("Error, error occurred during downloading the data!")
 
         '''
         Decompress the commit folder into the working directory.
@@ -155,16 +183,13 @@ class repo():
         commit_folder = os.path.join(branch_folder, os.listdir(branch_folder)[0])
         working_dir = self.__config_folder.split('.mvcs')[0]
         if self.is_nonempty_tar_file(commit_folder):
-            with tarfile.open(commit_folder) as ccf:
-                ccf.extractall(working_dir)
-                # try:
-                #     path = os.path.join(working_dir, os.listdir(working_dir)[1])
-                #     print(os.listdir(working_dir))
-                #     for filename in os.listdir(path):
-                #         shutil.move(os.path.join(path, filename), os.path.join(working_dir, filename))
-                #     os.rmdir(path)
-                # except Exception:
-                #     raise Exception("Error happened during downloading the repo!")
+            try:
+                with tarfile.open(commit_folder) as ccf:
+                    ccf.extractall(working_dir)
+            except:
+                raise Exception("Couldn't extract the last commit to main during cloning!")
+
+        ph.ok("    Cloned successfully!")
 
     @staticmethod
     def is_nonempty_tar_file(archive):

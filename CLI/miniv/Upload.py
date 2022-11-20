@@ -18,7 +18,7 @@ class upload():
         repo_name = self.__repo_management.get_repo_config()['name']
         branch_name = self.__user_mgt.get_user_data()['current_branch']
 
-        self.__upload_url = f'mvcs@172.31.237.131:~/{username}/{repo_name}/{branch_name}'
+        self.__upload_url = f'{self.__user_mgt.get_user_data()["clone_url"]}/{branch_name}'
 
         '''
         Create commits in the repo config file and in the API
@@ -43,13 +43,17 @@ class upload():
                     commit_id = self.__repo_management.get_latest_commit('main')['id']
                     self.__repo_management.modify_commit(commit_data, commit_id)
                 else:
-                    raise Exception('Error, cannot create a put commit request to the API!')
+                    raise Exception(
+                        'Error, cannot create a put commit request to the API,'
+                        f' response code {response.status_code}!')
             else:
                 response = self.__apply_commit_on_API("post", commit_data)
                 if response and response.status_code == 201:
                     self.__repo_management.create_commit(response.json())
                 else:
-                    raise Exception('Error, cannot create a post commit request to the API!')
+                    raise Exception(
+                        'Error, cannot create a post commit request to the API'
+                        f' response code {response.status_code}!')
 
         '''
         # Now we need to preform a scp command to upload the commit files from a branch 
@@ -63,14 +67,20 @@ class upload():
             if file.split(".")[0] != initial_commit:
                 try:
                     p = subprocess.run([
-                        'scp', os.path.join(branch_folder, file), f'{self.__upload_url}'])
+                        'scp', '-r', 
+                        os.path.join(branch_folder, file), 
+                        f'{self.__upload_url}'
+                    ])
                     if p.returncode != 0 :
                         raise Exception("Error, uploading repo data failed!")
-                except subprocess.CalledProcessError or p.returncode != 0:
+                except subprocess.CalledProcessError as e:
+                    print(e)
                     raise Exception("Error, wrong clone URL!")
 
         # Reset the current configuration
         self.__user_mgt.reset_new_commits(branch_folder)
+
+        ph.ok(" Uploaded changes successfully!")
 
     def __apply_commit_on_API(self, method, commit_data, commit_id=None):
         '''
@@ -91,6 +101,6 @@ class upload():
         elif method == 'put':
             response = requests.put(API_end_point, json = commit_data, headers=headers, )
         else:
-            raise Exception('Error, cannot updated the commit!')
+            raise Exception(f'Error, cannot updated the commit, response code {response.status_code}!')
 
         return response

@@ -145,6 +145,9 @@ class UserManagement():
     def is_in_main(self):
         return self.__user_config['current_branch'] == "main"
 
-    def check_for_uncommited_files(self):
-        # return not
-        return False
+    def get_branches_commits(self, branch_id):
+        output=[]
+        for commit in self.__user_config['new_commits']:
+            if commit["branch"] == f"{branch_id}":
+                output.append(commit)
+        return output
