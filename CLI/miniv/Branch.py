@@ -53,13 +53,6 @@ class branch():
         ph.ok(" " + result[:-1])
 
     def __create_branch(self):
-
-        # # Check if we have uncommited changes 
-        # diffs, new_files = Diff.diff_repo(self.__config_folder, self.__repo_management, self.__user_mgt)
-        # if diffs or len(new_files) > 0:
-        #     ph.err("Error, you have uncommited changes, please commit or delete them and try again")
-        #     exit(0)
-
         # Create the new branch folder
         new_branch_folder = os.path.join(self.__config_folder, self.__create)
         try:
@@ -227,26 +220,12 @@ def checkOut(branch_name, config_folder, repo_management, user_management):
             
             # Extract the last commit file on main into the working directory
             if Repository.repo.is_nonempty_tar_file(commit_folder):
-                with tarfile.open(commit_folder) as ccf:
-                    ccf.extractall(working_dir)
-                
-                # try:
-                #     # Check if the extraction was successful
-                #     extract_commit_folder = working_dir
-                #     # os.path.join(working_dir, last_commit_id)
-                #     # if not os.path.exists(extract_commit_folder):
-                #     #     raise Exception("Error, couldn't extract the last commit into the working directory!")
+                try:
+                    with tarfile.open(commit_folder) as ccf:
+                        ccf.extractall(working_dir)
+                except Exception as e:
+                    raise Exception(e)
 
-                #     # Move all the files from the extracted commit folder to the working directory
-                #     for filename in os.listdir(extract_commit_folder):
-                #         shutil.move(
-                #             os.path.join(extract_commit_folder, filename), 
-                #             os.path.join(working_dir, filename)
-                #         )
-                #     os.rmdir(extract_commit_folder)
-
-                # except Exception:
-                #     raise Exception("Error happened during extracting the repo!")
         ph.ok(f" Checked out to {branch_name}!")
     except Exception as e:
         raise Exception(f"{e}")

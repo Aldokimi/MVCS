@@ -170,3 +170,9 @@ class RepoManagement():
             raise Exception(f"Error, wrong path, {e}")
         return result
 
+    def get_largest_commit(self, commit1, commit2):
+        t1 = datetime.strptime(commit1['date_created'], '%Y-%m-%dT%H:%M:%S.%fZ')
+        t2 = datetime.strptime(commit2['date_created'], '%Y-%m-%dT%H:%M:%S.%fZ')
+        if t2 > t1:
+            return commit2
+        return commit1

@@ -1,6 +1,7 @@
 import os
 
-from miniv import Repository, Commit, Branch, Upload, Status, Diff
+from miniv import Repository, Commit, Branch, Upload,\
+     Status, Diff, Merge
 
 from helper import RepoManagement as RM
 from helper import UserManagement as UM
@@ -39,7 +40,10 @@ def branches_handler(args):
         raise Exception(e)
 
 def merge_branches(args):
-    print(vars(args))
+    try:
+        Merge.merge(args)
+    except Exception as e:
+        raise Exception(e)
 
 def upload(args):
     try:
@@ -56,7 +60,8 @@ def checkout(args):
     user_management = UM.UserManagement(repo_config_path)
     branch_name = str(args.branch_name) if args.branch_name else None
     try:
-        Branch.checkOut(branch_name, repo_config_path, repo_management, user_management)
+        Branch.checkOut(
+            branch_name, repo_config_path, repo_management, user_management)
     except Exception as e:
         raise Exception(e)
 

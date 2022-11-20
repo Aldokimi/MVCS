@@ -5,6 +5,7 @@ import shutil
 import tarfile
 import uuid
 
+from . import Diff
 from . import Repository
 
 from helper import RepoManagement as RM
@@ -24,13 +25,31 @@ class merge():
         self.__user_mgt = UM.UserManagement(self.__config_folder)
 
         if self.__branch:
-            self.__branch = str(self.__branch[0])
+            self.__branch = str(self.__branch)
             self.__merge_branches()
     
     def __merge_branches(self):
+        diffs, new_files = Diff.diff_repo(self.__config_folder, self.__repo_management, self.__user_mgt)
+        if diffs or len(new_files) != 0:
+            ph.err("Error, you have uncommitted changes, please commit your changes first!")
+            return
+
         if self.__user_mgt.get_user_data()["current_branch"] == self.__branch:
             ph.err("You cannot merge with the same branch, please choose another branch!")
+            return
         else:
+            # Check how sure is the user!
+            ph.warn("Are you sure that you want to merge the current branch "
+                f"<{self.__user_mgt.get_user_data()['current_branch']}> with the content of <{self.__branch}> ? (Y/n)")
+            
+            answer = input("\n\t\t")
+            ph.msg("")
+            if answer == "N" or answer == "n" or answer == "NO" or answer == "No" or answer  == "no":
+                ph.ok(" Merging aborted!")
+                return
+            else:
+                ph.msg(ph.blue("Merge stared . . . "))
+
             # First we need to decompress the last commit from the specified branch into a test directory (this directory will be called new)
             # Then we need to store the new files in a list and compare them to the current branch's files:
             #       * The additional files from the new directory will be copied to a new directory 
@@ -44,26 +63,32 @@ class merge():
             os.mkdir(test_dir, 0o777)
 
             # Decompress the latest commit from the specified branch to a test directory
-            last_commit_id = self.__repo_management.get_latest_commit(self.__branch)["unique_id"]
+            _, commit_a = self.__user_mgt.get_last_new_commit(
+                self.__repo_management.get_branch_data(branch_name=self.__branch)["id"])
+            commit_b = self.__repo_management.get_latest_commit(self.__branch)
+            commit = self.__repo_management.get_largest_commit(commit_a, commit_b)
+
+            has_commit_a = commit["unique_id"] == commit_a["unique_id"]
+
+            last_commit_id = commit["unique_id"]
             branch_dir = os.path.join(self.__config_folder, self.__branch)
             commit_file = os.path.join(branch_dir, f"{last_commit_id}.tar.xz")
 
-            if Repository.is_nonempty_tar_file(commit_file):
-                with tarfile.open(commit_file) as ccf:
-                    ccf.extractall(test_dir)
-                    try:
-                        path = os.path.join(test_dir, os.listdir(test_dir)[1])
-                        for filename in os.listdir(path):
-                            shutil.move(os.path.join(path, filename), os.path.join(test_dir, filename))
-                        os.rmdir(path)
-                    except Exception:
-                        raise Exception("Error happened during decompressing the files of the merge branch!")
+            if Repository.repo.is_nonempty_tar_file(commit_file):
+                try:
+                    with tarfile.open(commit_file) as ccf:
+                        ccf.extractall(test_dir)
+                except Exception as e:
+                    raise Exception(e)
 
             # Store the files of the the merge branch, e.g:
-            merge_branch = self.__repo_management.path_to_list(test_dir)
+            merge_branch = [(item.split(os.sep)[1:][0] if has_commit_a else item)\
+                 for item in self.__repo_management.path_to_list(test_dir) if not ".mvcs" in item]
 
             # Store the working directory
-            working_directory = self.__repo_management.path_to_list(self.__config_folder.split('.mvcs')[0])
+            working_directory = [item for item in self.__repo_management.path_to_list(
+                    self.__config_folder.split('.mvcs')[0]
+                ) if not ".mvcs" in item]
 
             # Get additional files from the new directory of the merge branch
             new_files = [item for item in merge_branch if item not in working_directory]
@@ -82,31 +107,47 @@ class merge():
                         os.mkdir(new_dir, 0o777)
                 shutil.move(file_to_move, new_directory)
 
+            has_merge_conflicts = False
+
             # Merge the common files into a new file inside the new directory
+            merge_conflict_files = []
             common_files = [item for item in merge_branch if item not in new_files]
             for file in common_files:
+                # Merge the old and the new files into one merge file
                 new_file = os.path.join(test_dir, file)
-                old_file = os.path.join(working_directory, file)
-                merge_result = self.merge_files(old_file, new_file)
+                old_file = os.path.join(self.__config_folder.split('.mvcs')[0], file)
+                merge_result, has_merge_conflicts = self.merge_files(old_file, new_file)
                 merge_file = os.path.join(new_directory, file)
+                # Get the path list to create new directories if needed
                 new_dir = ""
                 new_files_path_list = os.path.normpath(merge_file)
                 new_files_path_list = new_files_path_list.split(os.sep)
+                # Create the needed dirs
                 for i in new_files_path_list[:-1]:
                     new_dir = os.path.join(new_dir, i)
-                    if not os.path.isdir(new_dir):
+                    if not os.path.exists(new_dir):
                         os.mkdir(new_dir, 0o777)
-
+                # Create the new merged file
                 with open(merge_file, 'w') as _merged_file:
                     _merged_file.write(merge_result)
 
+                if has_merge_conflicts:
+                    merge_conflict_files.append(file + "\n")
+
             # Replace the working directory with the new directory
             self.__repo_management.delete_working_directory()
-            shutil.copytree(new_dir, self.__config_folder.split('.mvcs')[0], dirs_exist_ok=True)
+            shutil.copytree(new_directory, self.__config_folder.split('.mvcs')[0], dirs_exist_ok=True)
 
             # Delete the new and test directories
             shutil.rmtree(new_directory)
             shutil.rmtree(test_dir)
+
+            if len(merge_conflict_files) > 0:
+                ph.warn("You have some merge conflicts in files:"
+                    f"\n  ➜  {''.join(merge_conflict_files)}"
+                    ", please resolve them and commit the changes to complete the merge")
+            else:
+                ph.ok(" Merged the current branch to main successfully!")
         
     def merge_files(self, old_file, new_file):
         try:
@@ -115,7 +156,7 @@ class merge():
                 new_lines = new.readlines()
                 
                 d = difflib.Differ()
-                diff = d.compare(old_lines, new_lines)
+                diff = d.compare(new_lines , old_lines)
                 # print("\n".join(diff))
 
                 diff_list = list(diff)
@@ -141,7 +182,6 @@ class merge():
                         end_of_loop = False
                         while i < len(diff_list) and not end_of_loop:
                             diff_line = diff_list[i]
-                            # print(diff_line)
                             if diff_line[:2] == "+ ":
                                 pluses.append(diff_line[2:])
                             elif diff_line[:2] == "- ":
@@ -165,8 +205,6 @@ class merge():
                             else:
                                 has_conflicts = True
                                 composed_text += self.__conflict_text(pluses, minuses)
-
-                print(''.join(composed_text))
                 return (''.join(composed_text), has_conflicts)
         except Exception as e: 
             raise Exception("Error, cannot open comparison files: \n{}".format(e))
@@ -176,7 +214,7 @@ class merge():
         new_changes_line = "\n>>>>>>>>>>>>>>>>> New changes +++\n"
         composed_text.append(new_changes_line)
         composed_text += pluses
-        middle_line = "\n================= +++\n"
+        middle_line      = "\n================= +++\n"
         composed_text.append(middle_line)
         composed_text += minuses
         old_changes_line = "\n<<<<<<<<<<<<<<<<< Old changes ---\n"
