@@ -223,12 +223,13 @@ def undo(config_folder, repo_management, user_management):
         # Update the repository
         update_repository(config_folder, repo_management, user_management)
 
-def update_repository(config_folder, repo_management, user_management, get_last_commit=None):
+def update_repository(config_folder, repo_management, user_management, last_commit=None):
     # Delete the working directory
     repo_management.delete_working_directory()
+    commit_data = None
 
     # Extract the last commit 
-    if not get_last_commit:
+    if not last_commit:
         branch_data = repo_management.get_branch_data(
             branch_name=user_management.get_user_data()["current_branch"])
         if not branch_data:
@@ -238,7 +239,7 @@ def update_repository(config_folder, repo_management, user_management, get_last_
             branch_id=branch_data["id"]
         )[1]
     else:
-        commit_date = get_last_commit()
+        commit_data = last_commit
     commit_unique_id = commit_data["unique_id"]
     commit_file_name = os.path.join(
         config_folder, 
@@ -251,4 +252,3 @@ def update_repository(config_folder, repo_management, user_management, get_last_
                 ccf.extractall(working_dir)
         except Exception as e:
             raise Exception(e)
-            

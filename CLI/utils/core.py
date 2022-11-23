@@ -1,7 +1,7 @@
 import os
 
 from miniv import Repository, Commit, Branch, Upload,\
-     Status, Diff, Merge
+     Status, Diff, Merge, Update
 
 from helper import RepoManagement as RM
 from helper import UserManagement as UM
@@ -52,7 +52,10 @@ def upload(args):
         raise Exception(e)
 
 def update(args):
-    print(vars(args))
+    try:
+        Update.update(args)
+    except Exception as e:
+        raise Exception(e)
 
 def checkout(args):
     repo_config_path= os.path.join(os.path.join(os.getcwd()), ".mvcs")

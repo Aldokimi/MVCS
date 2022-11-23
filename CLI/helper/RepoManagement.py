@@ -91,9 +91,9 @@ class RepoManagement():
     def update_commits(self, new_commits, branch_id):
         try:
             with open(self.__repo_config_file, 'w') as f:
-                commits = dict(self.get_repo_config()["branches"][branch_id]["commits"])
+                commits = dict(self.get_repo_config()["branches"][f"{branch_id}"]["commits"])
                 commits.update(new_commits)
-                self.__repo_config['branches'] = commits
+                self.__repo_config['branches'][f"{branch_id}"]["commits"] = commits
                 json.dump(self.__repo_config, f)
         except:
             raise Exception("Error, cannot open repo_config.json")

@@ -1,10 +1,11 @@
-import lzma, sys
+import lzma
 import os, shutil, subprocess
 import tarfile
 import uuid
 from django.http import Http404
-import requests
+
 from rest_framework.views import APIView
+from datetime import datetime
 from rest_framework.response import Response
 from rest_framework import status
 from .models import User, Repository, Commit, Branch
@@ -182,6 +183,7 @@ class RepositoryList(APIView):
                     tar_xz_file.add(os.path.join(base_path, file))
             xz_file.close()
             shutil.copy2(commit_file_name, base_path)
+            os.system(f"chown -R mvcs:mvcs {os.path.join(base_path, commit_file_name)}")
             os.remove(commit_file_name)
 
             return Response(repositories.data, status=status.HTTP_201_CREATED)
@@ -241,6 +243,7 @@ class RepositoryDataDetail(APIView):
     def get(self, request, owner, name, format=None):
         owner_user = self.__get_user(owner)
         repo = self.__get_object(name, owner_user)
+        print(owner_user, repo)
         print(repo.name, repo.id)
         data = get_repo_details(repo.id, owner_user.id)
         return Response(data)
@@ -250,7 +253,7 @@ class BranchList(APIView):
     """
     List all branches, or create a new branch.
     """
-    def get_object_by_parent(self, pk):
+    def get_branch_object(self, pk):
         try:
             return Branch.objects.filter(repo=pk)
         except Repository.DoesNotExist:
@@ -262,17 +265,42 @@ class BranchList(APIView):
         return Response(serializer.data)
 
     def post(self, request, format=None):
-        branches = BranchSerializer(data=request.data)
-        if branches.is_valid():
-            branches.save()
+        branch = BranchSerializer(data=request.data)
+        if branch.is_valid():
+            branch.save()
             # Create a new director for the repository under the user's directory
-            repo = branches.validated_data['repo']
+            repo = branch.validated_data['repo']
             path = os.path.join(
                 "/home/mvcs/" + repo.owner.username + '/' + repo.name, 
-                branches.validated_data['name'])
+                branch.validated_data['name'])
             os.mkdir(path)
-            return Response(branches.data, status=status.HTTP_201_CREATED)
-        return Response(branches.errors, status=status.HTTP_400_BAD_REQUEST)
+            os.system(f"chown -R mvcs:mvcs {path}")
+
+            # Get the main branch of the repo
+            branches = Branch.objects.filter(repo=branch.data['repo'], name="main")
+            main_branch = branches.first()
+            print(main_branch.name)
+            last_commit = self.get_last_commit(main_branch.id)
+
+            # Copy the last commit from the main branch
+            base_path = "/home/mvcs/" + repo.owner.username + '/' + repo.name + '/' + branch.validated_data['name']
+            main_branch_dir = "/home/mvcs/" + repo.owner.username + '/' + repo.name + '/' + "main"
+            commit_file_name = f'{last_commit.unique_id}.tar.xz'
+
+            shutil.copy(os.path.join(main_branch_dir, commit_file_name), base_path)
+            os.system(f"chown -R mvcs:mvcs {os.path.join(base_path, commit_file_name)}")
+
+            return Response(branch.data, status=status.HTTP_201_CREATED)
+        return Response(branch.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_last_commit(self, branch_id):
+        commits = Commit.objects.filter(branch=branch_id)
+        latest_commit = commits.first()
+        for commit in commits:
+            if commit.date_created > latest_commit.date_created:
+                latest_commit = commit
+        return latest_commit
+
 
 class BranchDetail(APIView):
     """

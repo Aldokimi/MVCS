@@ -59,6 +59,7 @@ class repo():
             except Exception as e:
                 if os.path.exists(repo_path):
                     shutil.rmtree(repo_path)
+                    pass
 
         elif self.__create_request:
             self.create()

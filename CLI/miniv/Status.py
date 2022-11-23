@@ -1,6 +1,4 @@
 import os
-import tarfile
-import uuid
 from . import Diff
 
 from helper import RepoManagement as RM
