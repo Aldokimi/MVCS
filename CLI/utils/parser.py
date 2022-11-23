@@ -1,4 +1,4 @@
-import core
+from . import core
 
 def create_repo_parser(subparsers):
     desc = 'Create a new local repository, or clone a new one'
@@ -28,7 +28,8 @@ def commit_parser(subparsers):
     list_group.add_argument( '-l', '--list',help='list commits', action='store_true')
     
     info_group = parser.add_argument_group('commit info')      
-    info_group.add_argument('-si', '--show-info', help='Information about the commit with the given number', dest='info')
+    info_group.add_argument('-si', '--show-info', 
+                help='Information about the commit with the given number', dest='info')
 
     create_group = parser.add_argument_group('create commit')
     create_group.add_argument('-c', '--create', help='Commit message', dest='create')
@@ -55,11 +56,14 @@ def branch_parser(subparsers):
     delete_group.add_argument('-d', '--delete', nargs='+', help='delete branch(es)', dest='delete_b', metavar='branch')
 
     edit_group = branch_parser.add_argument_group('edit branches')
-    edit_group.add_argument('-rn', '--rename-branch', nargs='+', 
+    edit_group.add_argument('-rn', '--rename', nargs='+', 
         help='renames the current branch (miniv branch -rn new_name)'
         'or another specified branch (mg branch -rn branch_name new_name)',
         dest='rename_b'
     )
+
+    get_current_group = branch_parser.add_argument_group('create branches')
+    get_current_group.add_argument( '-cu', '--current',help='get the current branch', action='store_true')
 
     branch_parser.set_defaults(func=core.branches_handler)
 
@@ -67,33 +71,36 @@ def merge_branches_parser(subparsers):
     desc = 'Merge two branches'
     parser = subparsers.add_parser('merge', help=desc, description=(
           desc.capitalize() + '. ' + 'Merge the current branch to another branch in the local repository'), aliases=['mrg'])
-    parser.add_argument('branch', help='the branch name that is going to be merged into the current branch')
+    parser.add_argument('--branch', help='the branch name that is going to be merged into the current branch', dest="branch")
     parser.set_defaults(func=core.merge_branches)
 
 def upload_parser(subparsers):
     desc = 'Upload the changes to the remote repository'
     parser = subparsers.add_parser( 'upload', help=desc, description=(
           desc.capitalize() + '. ' + 'Upload all the local commits to the remote repository.'), aliases=['up'])
-    parser.add_argument('url', help='The repository URL, meaning this is a repository which is not linked to a remote repo'
+    parser.add_argument('--url', help='The repository URL, meaning this is a repository which is not linked to a remote repo'
         'and we are linking it when we pass the repo URL')
     parser.set_defaults(func=core.upload)
 
 def update_parser(subparsers):
     desc = 'Update the current repository with the changes from the remote repository'
     parser = subparsers.add_parser(
-        'upload', help=desc, description=(
+        'update', help=desc, description=(
           desc.capitalize() + '. ' + 'download the changes from the remote repository and apply them on the current branch.'), aliases=['upd'])
     parser.set_defaults(func=core.update)
 
 def checkout_parser(subparsers):
     desc = 'Checkout to another branch'
     parser = subparsers.add_parser('checkout', help=desc, description=(desc.capitalize()), aliases=['ch'])
+    parser.add_argument('--to', help='The branch destination where to switch to!', dest='branch_name')
     parser.set_defaults(func=core.checkout)
 
 
 def diff_parser(subparsers):
     desc = 'Get the difference between two files'
     parser = subparsers.add_parser('diff', help=desc, description=(desc.capitalize()), aliases=['df'])
+    parser.add_argument('--of', help='The file name to apply diff to!', dest='file1')
+    parser.add_argument('--diff_repo', help='Get the diff of the whole repository!', action='store_true')
     parser.set_defaults(func=core.diff)
 
 

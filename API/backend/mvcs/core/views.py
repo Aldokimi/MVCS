@@ -1,6 +1,11 @@
+import lzma
 import os, shutil, subprocess
+import tarfile
+import uuid
 from django.http import Http404
+
 from rest_framework.views import APIView
+from datetime import datetime
 from rest_framework.response import Response
 from rest_framework import status
 from .models import User, Repository, Commit, Branch
@@ -20,25 +25,25 @@ class RegistrationView(APIView):
             serializer.save()
             path = os.path.join("/home/mvcs/", serializer.validated_data['username'] + '/')
             os.mkdir(path)
+            os.system(f"chown -R mvcs:mvcs {path}")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):
     parser_classes = [JSONParser]
     def post(self, request):
-        print(request.data)
         if 'email' not in request.data or 'password' not in request.data:
             return Response({'msg': 'Credentials missing'}, status=status.HTTP_400_BAD_REQUEST)
 
         email = request.data.get('email', False)
         password = request.data.get('password', 'ERROR')
-        print(email, password)
         user = authenticate(request, email=email, password=password)
-        print(user)
+
         if user is not None:
             login(request, user)
             auth_data = get_tokens_for_user(request.user)
-            return Response({'msg': 'Login Success', **auth_data}, status=status.HTTP_200_OK)
+            return Response(
+                {'msg': 'Login Success', 'user_id': user.id, **auth_data}, status=status.HTTP_200_OK)
         return Response({'msg': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 class LogoutView(APIView):
@@ -122,9 +127,65 @@ class RepositoryList(APIView):
             repositories.save()
             # Create a new director for the repository under the user's directory
             repo = self.get_object(repositories.data['id'])
-            path = os.path.join("/home/mvcs/" + repo.owner.username + '/', repositories.validated_data['name'])
-            print(repo.owner.username)
+            path = os.path.join(
+                "/home/mvcs/" + repo.owner.username + '/', repositories.validated_data['name'])
             os.mkdir(path)
+            os.system(f"chown -R mvcs:mvcs {path}")
+            
+            ## Create a new branch called main which have a commit inside it
+            # Create the main branch
+            branch_request_data = {
+                "repo": repo.id,
+                "name": "main",
+            }
+
+            branch_data = BranchSerializer(data=branch_request_data)
+            if branch_data.is_valid():
+                branch_data.save()
+                path_to_branch = os.path.join(
+                    "/home/mvcs/" + repo.owner.username + '/' + repo.name, 
+                    branch_data.validated_data['name'])
+                os.mkdir(path_to_branch)
+                os.system(f"chown -R mvcs:mvcs {path_to_branch}")
+            else:
+                os.rmdir(path)
+                os.system(f"chown -R mvcs:mvcs {path}")
+                return Response(branch_data.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                branch = Branch.objects.get(
+                    pk=branch_data.data['id'], name=branch_data.validated_data['name'])
+            except Branch.DoesNotExist:
+                raise Http404
+
+            # Create the first commit in the main branch
+            commit_request_data = {
+                "message": 'Initial commit',
+                "branch" : branch.id,
+                "committer": repo.owner.id,
+                "unique_id": uuid.uuid4().hex
+            }
+
+            commit_data = CommitSerializer(data=commit_request_data)
+            if commit_data.is_valid():
+                commit_data.save()
+            else:
+                os.rmdir(path)
+                return Response(commit_data.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create the compressed folder of the initial commit
+            base_path = "/home/mvcs/" + repo.owner.username + '/' + repo.name + '/' + 'main'
+            commit_unique_id = commit_data.validated_data['unique_id']
+            commit_file_name = f'{commit_unique_id}.tar.xz'
+            xz_file = lzma.LZMAFile(commit_file_name, mode='w')
+            with tarfile.open(mode='w', fileobj=xz_file) as tar_xz_file:
+                for file in os.listdir(base_path):
+                    tar_xz_file.add(os.path.join(base_path, file))
+            xz_file.close()
+            shutil.copy2(commit_file_name, base_path)
+            os.system(f"chown -R mvcs:mvcs {os.path.join(base_path, commit_file_name)}")
+            os.remove(commit_file_name)
+
             return Response(repositories.data, status=status.HTTP_201_CREATED)
         return Response(repositories.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -148,7 +209,10 @@ class RepositoryDetail(APIView):
         serializer = RepositorySerializer(repository, data=request.data)
         if serializer.is_valid():
             # Rename the directory of the repository according to the update
-            os.rename('/home/mvcs/' + repository.owner.username + '/' + repository.name, '/home/mvcs/' + repository.owner.username + '/' + serializer.validated_data['name']) 
+            os.rename(
+                '/home/mvcs/' + repository.owner.username + '/' + repository.name, 
+                '/home/mvcs/' + repository.owner.username + '/' + serializer.validated_data['name']
+            ) 
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -164,8 +228,24 @@ class RepositoryDataDetail(APIView):
     """
     Get all the repository data.
     """
-    def get(self, request, pk, format=None):
-        data = get_repo_details(pk)
+    def __get_user(self, name):
+        try:
+            return User.objects.get(username=name)
+        except Repository.DoesNotExist:
+            raise Http404
+    
+    def __get_object(self, name ,owner):
+        try:
+            return Repository.objects.get(owner=owner, name=name)
+        except Repository.DoesNotExist:
+            raise Http404
+    
+    def get(self, request, owner, name, format=None):
+        owner_user = self.__get_user(owner)
+        repo = self.__get_object(name, owner_user)
+        print(owner_user, repo)
+        print(repo.name, repo.id)
+        data = get_repo_details(repo.id, owner_user.id)
         return Response(data)
 
 # Branch views handling
@@ -173,7 +253,7 @@ class BranchList(APIView):
     """
     List all branches, or create a new branch.
     """
-    def get_object_by_parent(self, pk):
+    def get_branch_object(self, pk):
         try:
             return Branch.objects.filter(repo=pk)
         except Repository.DoesNotExist:
@@ -185,15 +265,42 @@ class BranchList(APIView):
         return Response(serializer.data)
 
     def post(self, request, format=None):
-        branches = BranchSerializer(data=request.data)
-        if branches.is_valid():
-            branches.save()
+        branch = BranchSerializer(data=request.data)
+        if branch.is_valid():
+            branch.save()
             # Create a new director for the repository under the user's directory
-            repo = branches.validated_data['repo']
-            path = os.path.join("/home/mvcs/" + repo.owner.username + '/' + repo.name, branches.validated_data['name'])
+            repo = branch.validated_data['repo']
+            path = os.path.join(
+                "/home/mvcs/" + repo.owner.username + '/' + repo.name, 
+                branch.validated_data['name'])
             os.mkdir(path)
-            return Response(branches.data, status=status.HTTP_201_CREATED)
-        return Response(branches.errors, status=status.HTTP_400_BAD_REQUEST)
+            os.system(f"chown -R mvcs:mvcs {path}")
+
+            # Get the main branch of the repo
+            branches = Branch.objects.filter(repo=branch.data['repo'], name="main")
+            main_branch = branches.first()
+            print(main_branch.name)
+            last_commit = self.get_last_commit(main_branch.id)
+
+            # Copy the last commit from the main branch
+            base_path = "/home/mvcs/" + repo.owner.username + '/' + repo.name + '/' + branch.validated_data['name']
+            main_branch_dir = "/home/mvcs/" + repo.owner.username + '/' + repo.name + '/' + "main"
+            commit_file_name = f'{last_commit.unique_id}.tar.xz'
+
+            shutil.copy(os.path.join(main_branch_dir, commit_file_name), base_path)
+            os.system(f"chown -R mvcs:mvcs {os.path.join(base_path, commit_file_name)}")
+
+            return Response(branch.data, status=status.HTTP_201_CREATED)
+        return Response(branch.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_last_commit(self, branch_id):
+        commits = Commit.objects.filter(branch=branch_id)
+        latest_commit = commits.first()
+        for commit in commits:
+            if commit.date_created > latest_commit.date_created:
+                latest_commit = commit
+        return latest_commit
+
 
 class BranchDetail(APIView):
     """
@@ -224,7 +331,8 @@ class BranchDetail(APIView):
     def delete(self, request, pk, format=None):
         branch = self.get_object(pk)
         # Deleting the directory 
-        shutil.rmtree('/home/mvcs/' + branch.repo.owner.username + '/' + branch.repo.name + '/' + branch.name + '/')
+        shutil.rmtree(
+            '/home/mvcs/' + branch.repo.owner.username + '/' + branch.repo.name + '/' + branch.name + '/')
         branch.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -248,10 +356,6 @@ class CommitList(APIView):
         commits = CommitSerializer(data=request.data)
         if commits.is_valid():
             commits.save()
-            branch = commits.validated_data['branch']
-            base_path = "/home/mvcs/" + branch.repo.owner.username + '/' + branch.repo.name + '/' + branch.name
-            path = os.path.join(base_path, commits.validated_data['unique_id'])
-            os.mkdir(path)
             return Response(commits.data, status=status.HTTP_201_CREATED)
         return Response(commits.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -280,7 +384,8 @@ class CommitDetail(APIView):
 
     def delete(self, request, pk, format=None):
         commit = self.get_object(pk)
-        base_path = "/home/mvcs/" + commit.branch.repo.owner.username + '/' + commit.branch.repo.name + '/' + commit.branch.name
-        shutil.rmtree(base_path + '/' + commit.unique_id + '/')
+        base_path = "/home/mvcs/" + commit.branch.repo.owner.username\
+             + '/' + commit.branch.repo.name + '/' + commit.branch.name
+        os.remove(base_path + '/' + commit.unique_id + '.tar.xz')
         commit.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
