@@ -42,4 +42,16 @@ def get_repo_details(repo_id, owner_id):
     repo_data['branches'] = branches_array
 
     return repo_data
-    
+
+
+def get_user_repositories(user_id):
+    repos = Repository.objects.filter(owner=user_id)
+    return repos
+
+def get_repo_branches(repo_id):
+    branches = Branch.objects.filter(repo=repo_id)
+    return branches
+
+def get_branches_commits(branch_id):
+    commits = Commit.objects.filter(branch=branch_id)
+    return commits

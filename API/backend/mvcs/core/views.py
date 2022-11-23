@@ -10,11 +10,14 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import User, Repository, Commit, Branch
 from .serializers import UserSerializer, CommitSerializer,\
-     RepositorySerializer, BranchSerializer, RegistrationSerializer, PasswordChangeSerializer
+     RepositorySerializer, BranchSerializer,\
+         RegistrationSerializer, PasswordChangeSerializer
 from django.contrib.auth import authenticate, login, logout
 from rest_framework.permissions import IsAuthenticated
-from .utils import get_tokens_for_user, get_repo_details
+from .utils import get_tokens_for_user, get_repo_details,\
+     get_branches_commits, get_repo_branches, get_user_repositories
 from rest_framework.parsers import JSONParser
+from rest_framework.exceptions import PermissionDenied, NotAuthenticated
 
 
 # Authentication views
@@ -86,21 +89,36 @@ class UserDetail(APIView):
 
     def get(self, request, pk, format=None):
         user = self.get_object(pk)
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
         serializer = UserSerializer(user)
         return Response(serializer.data)
 
     def put(self, request, pk, format=None):
         user = self.get_object(pk)
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
+        if user.id is not self.request.user.id:
+            raise PermissionDenied()
         serializer = UserSerializer(user, data=request.data)
         if serializer.is_valid():
-            self. renameDirectory('/home/mvcs/', user.username, serializer.validated_data['username'])
             serializer.save()
+            try:
+                if request.data["email"]:
+                    if user.email != serializer.validated_data["email"]:
+                        self.renameDirectory('/home/mvcs/', user.username, serializer.validated_data['username'])
+            except:
+                pass
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk, format=None):
         # Deleting the user and the directory belonging to the user
         user = self.get_object(pk)
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
+        if user.id is not self.request.user.id:
+            raise PermissionDenied()
         shutil.rmtree('/home/mvcs/' + user.username + '/')
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -122,6 +140,9 @@ class RepositoryList(APIView):
         return Response(serializer.data)
 
     def post(self, request, format=None):
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
+
         repositories = RepositorySerializer(data=request.data)
         if repositories.is_valid():
             repositories.save()
@@ -206,6 +227,10 @@ class RepositoryDetail(APIView):
 
     def put(self, request, pk, format=None):
         repository = self.get_object(pk)
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
+        if repository.owner.id is not self.request.user.id:
+            raise PermissionDenied()
         serializer = RepositorySerializer(repository, data=request.data)
         if serializer.is_valid():
             # Rename the directory of the repository according to the update
@@ -219,6 +244,10 @@ class RepositoryDetail(APIView):
 
     def delete(self, request, pk, format=None):
         repository = self.get_object(pk)
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
+        if repository.owner.id is not self.request.user.id:
+            raise PermissionDenied()
         # Deleting the directory 
         shutil.rmtree('/home/mvcs/' + repository.owner.username + '/' + repository.name + '/')
         repository.delete()
@@ -241,6 +270,8 @@ class RepositoryDataDetail(APIView):
             raise Http404
     
     def get(self, request, owner, name, format=None):
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
         owner_user = self.__get_user(owner)
         repo = self.__get_object(name, owner_user)
         print(owner_user, repo)
@@ -266,7 +297,17 @@ class BranchList(APIView):
 
     def post(self, request, format=None):
         branch = BranchSerializer(data=request.data)
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
+
         if branch.is_valid():
+            # Check if we have a branch with the same name in the belonging repository
+            for x in get_repo_branches(branch.validated_data["repo"]):
+                if x.name == branch.validated_data["name"]:
+                    return Response(
+                        {'Error': 'This branch already exists!'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
             branch.save()
             # Create a new director for the repository under the user's directory
             repo = branch.validated_data['repo']
@@ -319,6 +360,15 @@ class BranchDetail(APIView):
 
     def put(self, request, pk, format=None):
         branch = self.get_object(pk)
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
+        if branch.repo.owner.id is not self.request.user.id:
+            raise PermissionDenied()
+        if branch.name == "main":
+            return Response(
+                {'Error': 'You cannot modify the main branch!'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
         serializer = BranchSerializer(branch, data=request.data)
         if serializer.is_valid():
             # Rename the directory of the repository according to the update
@@ -330,6 +380,15 @@ class BranchDetail(APIView):
 
     def delete(self, request, pk, format=None):
         branch = self.get_object(pk)
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
+        if branch.repo.owner.id is not self.request.user.id:
+            raise PermissionDenied()
+        if branch.name == "main":
+            return Response(
+                {'Error': 'You cannot delete the main branch!'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
         # Deleting the directory 
         shutil.rmtree(
             '/home/mvcs/' + branch.repo.owner.username + '/' + branch.repo.name + '/' + branch.name + '/')
@@ -354,6 +413,9 @@ class CommitList(APIView):
 
     def post(self, request, format=None):
         commits = CommitSerializer(data=request.data)
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
+
         if commits.is_valid():
             commits.save()
             return Response(commits.data, status=status.HTTP_201_CREATED)
@@ -376,6 +438,10 @@ class CommitDetail(APIView):
 
     def put(self, request, pk, format=None):
         commit = self.get_object(pk)
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
+        if commit.branch.repo.owner.id is not self.request.user.id:
+            raise PermissionDenied()
         serializer = CommitSerializer(commit, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -384,6 +450,10 @@ class CommitDetail(APIView):
 
     def delete(self, request, pk, format=None):
         commit = self.get_object(pk)
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
+        if commit.branch.repo.owner.id is not self.request.user.id:
+            raise PermissionDenied()
         base_path = "/home/mvcs/" + commit.branch.repo.owner.username\
              + '/' + commit.branch.repo.name + '/' + commit.branch.name
         os.remove(base_path + '/' + commit.unique_id + '.tar.xz')
