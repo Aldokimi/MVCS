@@ -359,6 +359,9 @@ class BranchList(APIView):
         branch = serializer(data=request.data)
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
+        if branch.repo.owner.id is not self.request.user.id and\
+            self.request.user.id not in [user.id for user in branch.repo.contributors.all()]:
+            raise PermissionDenied()
 
         if branch.is_valid():
             # Check if we have a branch with the same name in the belonging repository
@@ -482,11 +485,6 @@ class CommitList(APIView):
     """
     List all commits, or create a new commit.
     """
-    def get_object(self, pk):
-        try:
-            return Commit.objects.get(pk=pk)
-        except Commit.DoesNotExist:
-            raise Http404
     
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -500,15 +498,24 @@ class CommitList(APIView):
         return Response(serializer.data)
 
     def post(self, request, format=None):
-        serializer = self.get_serializer_class()
-        commits = serializer(data=request.data)
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
 
-        if commits.is_valid():
-            commits.save()
-            return Response(commits.data, status=status.HTTP_201_CREATED)
-        return Response(commits.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.get_serializer_class()
+        commit = serializer(data=request.data)
+
+        try: branch = Branch.objects.get(pk=request.data["branch"])
+        except: return Response(commit.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        print(self.request.user.id, [user.id for user in branch.repo.contributors.all()])
+        if branch.repo.owner.id is not self.request.user.id and\
+            self.request.user.id not in [user.id for user in branch.repo.contributors.all()]:
+            raise PermissionDenied()
+
+        if commit.is_valid():
+            commit.save()
+            return Response(commit.data, status=status.HTTP_201_CREATED)
+        return Response(commit.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class CommitDetail(APIView):
     """
@@ -535,7 +542,8 @@ class CommitDetail(APIView):
         commit = self.get_object(pk)
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
-        if commit.branch.repo.owner.id is not self.request.user.id:
+        if commit.branch.repo.owner.id is not self.request.user.id and\
+            self.request.user.id not in [user.id for user in commit.branch.repo.contributors.all()]:
             raise PermissionDenied()
 
         notAllowedValues = ["date_created", "id", "branch", "unique_id", "committer"]
@@ -546,6 +554,7 @@ class CommitDetail(APIView):
         ser = self.get_serializer_class()
         serializer = ser(commit, data=request.data)
         if serializer.is_valid():
+            serializer.validated_data["committer"] = self.request.user
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
