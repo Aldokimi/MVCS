@@ -89,8 +89,7 @@ class Repository(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     date_created = models.DateTimeField(verbose_name="date created", default=timezone.now)
     last_updated = models.DateTimeField(verbose_name="date joined", default=timezone.now)
-    contributors = models.ForeignKey(
-        User, null=True, on_delete=models.SET_NULL, related_name='repo_contributors')
+    contributors = models.ManyToManyField(User, null=True, related_name='repo_contributors')
     private = models.BooleanField(default=False)
 
 class Branch(models.Model):
