@@ -1,7 +1,7 @@
 from django.http import Http404
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Repository, Branch, Commit, User
-from .serializers import RepositorySerializer, BranchSerializer, CommitSerializer, UserSerializer
+from .serializers import CreateRepositorySerializer, CreateBranchSerializer, CreateCommitSerializer, CreateUserSerializer
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -14,13 +14,13 @@ def get_tokens_for_user(user):
 def get_repo_details(repo_id, owner_id):
     try:
         repo = Repository.objects.get(pk=repo_id)
-        repo_data = RepositorySerializer(repo).data
+        repo_data = CreateRepositorySerializer(repo).data
     except Repository.DoesNotExist:
         raise Http404
     
     try:
         owner = User.objects.get(pk=owner_id)
-        repo_data['owner_data'] = UserSerializer(owner).data
+        repo_data['owner_data'] = CreateUserSerializer(owner).data
     except Repository.DoesNotExist:
         raise Http404
 
@@ -28,12 +28,12 @@ def get_repo_details(repo_id, owner_id):
     branches_array = {}
     
     for branch in branches:
-        branch_data = BranchSerializer(branch).data
+        branch_data = CreateBranchSerializer(branch).data
 
         commits = Commit.objects.filter(branch=branch)
         commit_array = {}
         for commit in commits:
-            commit_data = CommitSerializer(commit).data
+            commit_data = CreateCommitSerializer(commit).data
             commit_array[commit_data['id']] = commit_data
 
         branch_data['commits'] = commit_array

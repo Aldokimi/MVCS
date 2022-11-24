@@ -2,25 +2,30 @@ import lzma
 import os, shutil, subprocess
 import tarfile
 import uuid
-from django.http import Http404
 
 from rest_framework.views import APIView
-from datetime import datetime
 from rest_framework.response import Response
 from rest_framework import status
-from .models import User, Repository, Commit, Branch
-from .serializers import UserSerializer, CommitSerializer,\
-     RepositorySerializer, BranchSerializer,\
-         RegistrationSerializer, PasswordChangeSerializer
-from django.contrib.auth import authenticate, login, logout
 from rest_framework.permissions import IsAuthenticated
-from .utils import get_tokens_for_user, get_repo_details,\
-     get_branches_commits, get_repo_branches, get_user_repositories
 from rest_framework.parsers import JSONParser
 from rest_framework.exceptions import PermissionDenied, NotAuthenticated
 
+from .models import User, Repository, Commit, Branch
+from .serializers import CreateUserSerializer, UpdateUserSerializer,\
+    CreateRepositorySerializer, UpdateRepositorySerializer,\
+         RegistrationSerializer, PasswordChangeSerializer,\
+            CreateBranchSerializer, UpdateBranchSerializer,\
+                CreateCommitSerializer, UpdateCommitSerializer
+from .utils import get_tokens_for_user, get_repo_details,\
+     get_branches_commits, get_repo_branches, get_user_repositories
 
+from django.http import Http404
+from django.contrib.auth import authenticate, login, logout
+
+
+"""
 # Authentication views
+"""
 class RegistrationView(APIView):
     def post(self, request):
         serializer = RegistrationSerializer(data=request.data)
@@ -64,14 +69,17 @@ class ChangePasswordView(APIView):
         request.user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
+"""
 # User views handling
+"""
 class UserList(APIView):
     """
     List all users, or create a new user.
     """
     def get(self, request, format=None):
         users = User.objects.all()
-        serializer = UserSerializer(users, many=True)
+        serializer = CreateUserSerializer(users, many=True)
         return Response(serializer.data)
 
 class UserDetail(APIView):
@@ -87,28 +95,45 @@ class UserDetail(APIView):
     def renameDirectory(self, path, dir_name, new_name):
         subprocess.run(["mv", path + dir_name + '/', path + new_name+ '/'])
 
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return CreateUserSerializer
+        elif self.request.method in ["PUT", "PATCH"]:
+            return UpdateUserSerializer
+
     def get(self, request, pk, format=None):
         user = self.get_object(pk)
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
-        serializer = UserSerializer(user)
+        serializer = CreateUserSerializer(user)
         return Response(serializer.data)
 
     def put(self, request, pk, format=None):
+        # Set permissions
         user = self.get_object(pk)
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
         if user.id is not self.request.user.id:
             raise PermissionDenied()
-        serializer = UserSerializer(user, data=request.data)
+
+        notAllowedValues = ["is_active", "id", "is_admin", "date_joined"]
+        for k in request.data:
+            if k in notAllowedValues:
+                return Response({"Error":"You cannot modify this field!"}, status=status.HTTP_400_BAD_REQUEST)
+
+        get_ser = self.get_serializer_class()
+        serializer = get_ser(user, data=request.data)
         if serializer.is_valid():
             serializer.save()
             try:
                 if request.data["email"]:
                     if user.email != serializer.validated_data["email"]:
-                        self.renameDirectory('/home/mvcs/', user.username, serializer.validated_data['username'])
-            except:
-                pass
+                        self.renameDirectory(
+                            '/home/mvcs/', 
+                            user.username, 
+                            serializer.validated_data['username']
+                        )
+            except: pass
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -119,11 +144,15 @@ class UserDetail(APIView):
             raise NotAuthenticated()
         if user.id is not self.request.user.id:
             raise PermissionDenied()
+
         shutil.rmtree('/home/mvcs/' + user.username + '/')
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
+"""
 # Repository views handling
+"""
 class RepositoryList(APIView):
     """
     List all repositories, or create a new repository.
@@ -134,16 +163,22 @@ class RepositoryList(APIView):
         except Repository.DoesNotExist:
             raise Http404
 
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return CreateRepositorySerializer
+        elif self.request.method in ["PUT", "PATCH"]:
+            return UpdateRepositorySerializer
+
     def get(self, request, format=None):
         repositories = Repository.objects.all()
-        serializer = RepositorySerializer(repositories, many=True)
+        serializer = CreateRepositorySerializer(repositories, many=True)
         return Response(serializer.data)
 
     def post(self, request, format=None):
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
-
-        repositories = RepositorySerializer(data=request.data)
+        serializer = self.get_serializer_class()
+        repositories = serializer(data=request.data)
         if repositories.is_valid():
             repositories.save()
             # Create a new director for the repository under the user's directory
@@ -160,7 +195,7 @@ class RepositoryList(APIView):
                 "name": "main",
             }
 
-            branch_data = BranchSerializer(data=branch_request_data)
+            branch_data = CreateBranchSerializer(data=branch_request_data)
             if branch_data.is_valid():
                 branch_data.save()
                 path_to_branch = os.path.join(
@@ -187,7 +222,7 @@ class RepositoryList(APIView):
                 "unique_id": uuid.uuid4().hex
             }
 
-            commit_data = CommitSerializer(data=commit_request_data)
+            commit_data = CreateCommitSerializer(data=commit_request_data)
             if commit_data.is_valid():
                 commit_data.save()
             else:
@@ -220,9 +255,15 @@ class RepositoryDetail(APIView):
         except Repository.DoesNotExist:
             raise Http404
 
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return CreateRepositorySerializer
+        elif self.request.method in ["PUT", "PATCH"]:
+            return UpdateRepositorySerializer
+
     def get(self, request, pk, format=None):
         repository = self.get_object(pk)
-        serializer = RepositorySerializer(repository)
+        serializer = CreateRepositorySerializer(repository)
         return Response(serializer.data)
 
     def put(self, request, pk, format=None):
@@ -231,13 +272,23 @@ class RepositoryDetail(APIView):
             raise NotAuthenticated()
         if repository.owner.id is not self.request.user.id:
             raise PermissionDenied()
-        serializer = RepositorySerializer(repository, data=request.data)
+
+        notAllowedValues = ["id", "date_created", "owner"]
+        for k in request.data:
+            if k in notAllowedValues:
+                return Response({"Error":"You cannot modify this field!"}, status=status.HTTP_400_BAD_REQUEST)
+
+        ser = self.get_serializer_class()
+        serializer = ser(repository, data=request.data)
         if serializer.is_valid():
             # Rename the directory of the repository according to the update
-            os.rename(
-                '/home/mvcs/' + repository.owner.username + '/' + repository.name, 
-                '/home/mvcs/' + repository.owner.username + '/' + serializer.validated_data['name']
-            ) 
+            try:
+                if request.data["name"]:
+                    os.rename(
+                        '/home/mvcs/' + repository.owner.username + '/' + repository.name, 
+                        '/home/mvcs/' + repository.owner.username + '/' + serializer.validated_data['name']
+                    )
+            except: pass
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -279,7 +330,10 @@ class RepositoryDataDetail(APIView):
         data = get_repo_details(repo.id, owner_user.id)
         return Response(data)
 
+
+"""
 # Branch views handling
+"""
 class BranchList(APIView):
     """
     List all branches, or create a new branch.
@@ -289,14 +343,20 @@ class BranchList(APIView):
             return Branch.objects.filter(repo=pk)
         except Repository.DoesNotExist:
             raise Http404
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return CreateBranchSerializer
+        elif self.request.method in ["PUT", "PATCH"]:
+            return UpdateBranchSerializer
 
     def get(self, request, format=None):
         branches = Branch.objects.all()
-        serializer = BranchSerializer(branches, many=True)
+        serializer = CreateBranchSerializer(branches, many=True)
         return Response(serializer.data)
 
     def post(self, request, format=None):
-        branch = BranchSerializer(data=request.data)
+        serializer = self.get_serializer_class()
+        branch = serializer(data=request.data)
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
 
@@ -324,8 +384,10 @@ class BranchList(APIView):
             last_commit = self.get_last_commit(main_branch.id)
 
             # Copy the last commit from the main branch
-            base_path = "/home/mvcs/" + repo.owner.username + '/' + repo.name + '/' + branch.validated_data['name']
-            main_branch_dir = "/home/mvcs/" + repo.owner.username + '/' + repo.name + '/' + "main"
+            base_path = "/home/mvcs/" +\
+                 repo.owner.username + '/' + repo.name + '/' + branch.validated_data['name']
+            main_branch_dir = "/home/mvcs/" +\
+                 repo.owner.username + '/' + repo.name + '/' + "main"
             commit_file_name = f'{last_commit.unique_id}.tar.xz'
 
             shutil.copy(os.path.join(main_branch_dir, commit_file_name), base_path)
@@ -353,9 +415,15 @@ class BranchDetail(APIView):
         except Branch.DoesNotExist:
             raise Http404
 
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return CreateBranchSerializer
+        elif self.request.method in ["PUT", "PATCH"]:
+            return UpdateBranchSerializer
+
     def get(self, request, pk, format=None):
         branch = self.get_object(pk)
-        serializer = BranchSerializer(branch)
+        serializer = CreateBranchSerializer(branch)
         return Response(serializer.data)
 
     def put(self, request, pk, format=None):
@@ -369,11 +437,21 @@ class BranchDetail(APIView):
                 {'Error': 'You cannot modify the main branch!'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
-        serializer = BranchSerializer(branch, data=request.data)
+        
+        notAllowedValues = ["date_created", "id", "repo"]
+        for k in request.data:
+            if k in notAllowedValues:
+                return Response({"Error":"You cannot modify this field!"}, status=status.HTTP_400_BAD_REQUEST)
+
+        ser = self.get_serializer_class()
+        serializer = ser(branch, data=request.data)
         if serializer.is_valid():
             # Rename the directory of the repository according to the update
-            repo_dir = '/home/mvcs/' + branch.repo.owner.username + '/' + branch.repo.name + '/'
-            os.rename( repo_dir + branch.name, repo_dir + serializer.validated_data['name']) 
+            try:
+                if request.data["name"]:
+                    repo_dir = '/home/mvcs/' + branch.repo.owner.username + '/' + branch.repo.name + '/'
+                    os.rename( repo_dir + branch.name, repo_dir + serializer.validated_data['name']) 
+            except: pass
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -391,11 +469,15 @@ class BranchDetail(APIView):
             )
         # Deleting the directory 
         shutil.rmtree(
-            '/home/mvcs/' + branch.repo.owner.username + '/' + branch.repo.name + '/' + branch.name + '/')
+            '/home/mvcs/' + branch.repo.owner.username +\
+                 '/' + branch.repo.name + '/' + branch.name + '/')
         branch.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
+"""
 # Commit views handling
+"""
 class CommitList(APIView):
     """
     List all commits, or create a new commit.
@@ -406,13 +488,20 @@ class CommitList(APIView):
         except Commit.DoesNotExist:
             raise Http404
     
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return CreateCommitSerializer
+        elif self.request.method in ["PUT", "PATCH"]:
+            return UpdateCommitSerializer
+
     def get(self, request, format=None):
         commits = Commit.objects.all()
-        serializer = CommitSerializer(commits, many=True)
+        serializer = CreateCommitSerializer(commits, many=True)
         return Response(serializer.data)
 
     def post(self, request, format=None):
-        commits = CommitSerializer(data=request.data)
+        serializer = self.get_serializer_class()
+        commits = serializer(data=request.data)
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
 
@@ -431,9 +520,15 @@ class CommitDetail(APIView):
         except Commit.DoesNotExist:
             raise Http404
 
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return CreateCommitSerializer
+        elif self.request.method in ["PUT", "PATCH"]:
+            return UpdateCommitSerializer
+
     def get(self, request, pk, format=None):
         commit = self.get_object(pk)
-        serializer = CommitSerializer(commit)
+        serializer = CreateCommitSerializer(commit)
         return Response(serializer.data)
 
     def put(self, request, pk, format=None):
@@ -442,7 +537,14 @@ class CommitDetail(APIView):
             raise NotAuthenticated()
         if commit.branch.repo.owner.id is not self.request.user.id:
             raise PermissionDenied()
-        serializer = CommitSerializer(commit, data=request.data)
+
+        notAllowedValues = ["date_created", "id", "branch", "unique_id", "committer"]
+        for k in request.data:
+            if k in notAllowedValues:
+                return Response({"Error":"You cannot modify this field!"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        ser = self.get_serializer_class()
+        serializer = ser(commit, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)

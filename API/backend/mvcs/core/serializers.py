@@ -32,7 +32,7 @@ class PasswordChangeSerializer(serializers.Serializer):
             raise serializers.ValidationError({'current_password': 'Does not match'})
         return value
 
-class UserSerializer(serializers.ModelSerializer):
+class CreateUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
@@ -43,17 +43,45 @@ class UserSerializer(serializers.ModelSerializer):
             'password': {'write_only':True}
         }
 
-class RepositorySerializer(serializers.ModelSerializer):
+class UpdateUserSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(max_length=100, required=False)
+    email = serializers.CharField(max_length=100, required=False)
+    class Meta:
+        model = User
+        fields = [
+            'id','username','email','linkedin_token','first_name',
+            'last_name','bio','date_of_birth','profile_picture',
+        ]
+
+class CreateRepositorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Repository
         fields=['id','name','date_created','last_updated','private','contributors','owner',]
 
-class BranchSerializer(serializers.ModelSerializer):
+class UpdateRepositorySerializer(serializers.ModelSerializer):
+    name = serializers.CharField(max_length=100, required=False)
+    class Meta:
+        model = Repository
+        fields=['name', 'private', 'contributors',]
+
+class CreateBranchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Branch
         fields=['repo','id','name','date_created','has_locked_files','locked',]
 
-class CommitSerializer(serializers.ModelSerializer):
+class UpdateBranchSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(max_length=100, required=False)
+    class Meta:
+        model = Branch
+        fields=['id','name','has_locked_files','locked',]
+
+class CreateCommitSerializer(serializers.ModelSerializer):
     class Meta:
         model = Commit
         fields=['id','date_created','date_updated','message','branch','committer','unique_id',]
+
+class UpdateCommitSerializer(serializers.ModelSerializer):
+    message = serializers.CharField(max_length=700, required=False)
+    class Meta:
+        model = Commit
+        fields=['id','message',]
