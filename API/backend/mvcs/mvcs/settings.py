@@ -60,9 +60,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-
-    'http://localhost:4200',
-    'http://localhost:9876'
+    'http://localhost:3000',
 ]
 
 ROOT_URLCONF = 'mvcs.urls'
