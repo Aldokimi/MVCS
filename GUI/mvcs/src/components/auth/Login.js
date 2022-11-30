@@ -1,11 +1,11 @@
 import React, { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Navigate, useNavigate  } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 import Form from "react-validation/build/form";
 import CheckButton from "react-validation/build/button";
 
-import { login } from "../actions/auth";
+import { login } from "../../actions/auth";
 
 const required = (value) => {
     if (!value) {
@@ -50,14 +50,14 @@ const Login = (props) => {
         form.current.validateAll();
 
         if (checkBtn.current.context._errors.length === 0) {
-        dispatch(login(email, password))
-            .then(() => {
-                navigate("/profile");
-                window.location.reload();
-            })
-            .catch(() => {
-                setLoading(false);
-            });
+            dispatch(login(email, password))
+                .then(() => {
+                    navigate("/profile");
+                    window.location.reload();
+                })
+                .catch(() => {
+                    setLoading(false);
+                });
         } else {
             setLoading(false);
         }
@@ -66,7 +66,7 @@ const Login = (props) => {
     if (isLoggedIn) {
         return <Navigate to="/profile" />;
     }
-    
+
     return (
         <div className="col-md-12">
             <div className="card card-container">
@@ -117,7 +117,7 @@ const Login = (props) => {
                             </div>
                         </div>
                     )}
-                    
+
                     <CheckButton style={{ display: "none" }} ref={checkBtn} />
                 </Form>
             </div>

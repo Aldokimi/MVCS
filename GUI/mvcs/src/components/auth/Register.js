@@ -1,12 +1,12 @@
 import React, { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Navigate, useNavigate  } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 import Form from "react-validation/build/form";
 import CheckButton from "react-validation/build/button";
 import { isEmail } from "validator";
 
-import { register } from "../actions/auth";
+import { register } from "../../actions/auth";
 
 const required = (value) => {
   if (!value) {
@@ -176,7 +176,7 @@ const Register = () => {
 
           {message && (
             <div className="form-group">
-              <div className={ isRegistered ? "alert alert-success" : "alert alert-danger" } role="alert">
+              <div className={isRegistered ? "alert alert-success" : "alert alert-danger"} role="alert">
                 {message}
               </div>
             </div>

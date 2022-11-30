@@ -25,7 +25,7 @@ const login = async (email, password) => {
 
 const logout = () => {
     localStorage.removeItem("user");
-    return axios.post(API_URL + "register/", {})
+    return axios.post(API_URL + "logout/", {})
 };
 
 // eslint-disable-next-line import/no-anonymous-default-export
