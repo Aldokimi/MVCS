@@ -42,7 +42,7 @@ const App = () => {
             <Route path="/register" element={<Register />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/users" element={<Users />} />
-            <Route path="/users/:username" element={<User />} />
+            <Route path="/:username" element={<User />} />
             <Route path="/*" element={<PageNotFound />} />
           </Routes>
         </div>

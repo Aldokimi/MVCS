@@ -3,9 +3,9 @@ export default function authHeader() {
 
     if (user && user.access) {
         return {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + user.access
+            'accept': 'application/json',
+            'content-type': 'application/json',
+            'authorization': 'Bearer ' + user.access
         };
     } else {
         return {};

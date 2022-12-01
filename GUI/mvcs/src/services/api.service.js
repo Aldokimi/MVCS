@@ -29,7 +29,25 @@ const getRepo = (id) => {
   return axios.get(API_URL + `repos/${id}`, { headers: authHeader() });
 }
 
+const getBranch = (id) => {
+  return axios.get(API_URL + `branches/${id}`, { headers: authHeader() });
+}
 
+const getCommit = (id) => {
+  return axios.get(API_URL + `commits/${id}`, { headers: authHeader() });
+}
+
+const getReposForUser = (id) => {
+  return axios.get(API_URL + `users/${id}/repos`, { headers: authHeader() });
+}
+
+const getBranchesForUser = (id) => {
+  return axios.get(API_URL + `users/${id}/branches`, { headers: authHeader() });
+}
+
+const getCommitsForUser = (id) => {
+  return axios.get(API_URL + `users/${id}/commits`, { headers: authHeader() });
+}
 // POST requests
 const createRepository = () => {
   return axios.post(API_URL + "repos/", { headers: authHeader() });
@@ -78,6 +96,11 @@ export default {
   getAllCommits,
   getUser,
   getRepo,
+  getBranch,
+  getCommit,
+  getReposForUser,
+  getBranchesForUser,
+  getCommitsForUser,
   createRepository,
   modifyRepository,
   modifyBranch,

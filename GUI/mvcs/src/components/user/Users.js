@@ -9,7 +9,7 @@ const Users = () => {
   const dispatch = useDispatch();
   let navigate = useNavigate();
   const { user: current_user } = useSelector((state) => state.auth);
-  const { dataProvided: dpr, users: all_users } = useSelector(state => state.all_users);
+  const { allUsersProvided: dpr, users: all_users } = useSelector(state => state.all_users);
   const [ users, setUsers ] = useState({});
   const [ dataLoaded, setDataLoaded ] = useState(false);
   const [ dataGathered, setDataGathered ] = useState(false);
@@ -101,7 +101,7 @@ const Users = () => {
                               </div>
                               <div className="col-md-3">
                                 <button className="btn btn-primary m-1" type="button" 
-                                    onClick={() => navigate(`/users/${user.username}`)}>Show</button>
+                                    onClick={() => navigate(`/${user.username}`)}>Show</button>
                                 {
                                   (current_user.user_id === user.id) 
                                   ? <button className="btn btn-primary  m-1" 

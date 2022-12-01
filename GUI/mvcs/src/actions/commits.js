@@ -1,22 +1,22 @@
 import {
-    GET_ALL_REPOS_SUCCESS,
-    GET_ALL_REPOS_FAIL,
-    GET_REPO_SUCCESS,
-    GET_REPO_FAIL,
-    MODIFY_REPO_SUCCESS,
-    MODIFY_REPO_FAIL,
-    DELETE_REPO_SUCCESS,
-    DELETE_REPO_FAIL,
+    GET_ALL_COMMITS_SUCCESS,
+    GET_ALL_COMMITS_FAIL,
+    GET_COMMIT_SUCCESS,
+    GET_COMMIT_FAIL,
+    MODIFY_COMMIT_SUCCESS,
+    MODIFY_COMMIT_FAIL,
+    DELETE_COMMIT_SUCCESS,
+    DELETE_COMMIT_FAIL,
 } from "./types";
 
 import APIService from "../services/api.service";
 
-export const getAllRepos = () => (dispatch) => {
-    return APIService.getAllRepos().then(
+export const getAllCommits = () => (dispatch) => {
+    return APIService.getAllCommits().then(
         (response) => {
             dispatch({
-                type: GET_ALL_REPOS_SUCCESS,
-                payload: { repos: response },
+                type: GET_ALL_COMMITS_SUCCESS,
+                payload: { commits: response },
             });
             return Promise.resolve();
         },
@@ -24,7 +24,7 @@ export const getAllRepos = () => (dispatch) => {
             const message = (error.response && error.response.data) || error.message || error.toString();
 
             dispatch({
-                type: GET_ALL_REPOS_FAIL,
+                type: GET_ALL_COMMITS_FAIL,
                 payload: message,
             });
 
@@ -33,12 +33,12 @@ export const getAllRepos = () => (dispatch) => {
     )
 }
 
-export const getRepo = (id) => (dispatch) => {
-    return APIService.getRepo(id).then(
+export const getCommit = (id) => (dispatch) => {
+    return APIService.getCommit(id).then(
         (response) => {
             dispatch({
-                type: GET_REPO_SUCCESS,
-                payload: { repo: response },
+                type: GET_COMMIT_SUCCESS,
+                payload: { commit: response },
             });
 
             return Promise.resolve();
@@ -47,7 +47,7 @@ export const getRepo = (id) => (dispatch) => {
             const message = (error.response && error.response.data) || error.message || error.toString();
 
             dispatch({
-                type: GET_REPO_FAIL,
+                type: GET_COMMIT_FAIL,
                 payload: message,
             });
 

@@ -1,22 +1,22 @@
 import {
-    GET_ALL_REPOS_SUCCESS,
-    GET_ALL_REPOS_FAIL,
-    GET_REPO_SUCCESS,
-    GET_REPO_FAIL,
-    MODIFY_REPO_SUCCESS,
-    MODIFY_REPO_FAIL,
-    DELETE_REPO_SUCCESS,
-    DELETE_REPO_FAIL,
+    GET_ALL_BRANCHES_SUCCESS,
+    GET_ALL_BRANCHES_FAIL,
+    GET_BRANCH_SUCCESS,
+    GET_BRANCH_FAIL,
+    MODIFY_BRANCH_SUCCESS,
+    MODIFY_BRANCH_FAIL,
+    DELETE_BRANCH_SUCCESS,
+    DELETE_BRANCH_FAIL,
 } from "./types";
 
 import APIService from "../services/api.service";
 
-export const getAllRepos = () => (dispatch) => {
-    return APIService.getAllRepos().then(
+export const getAllBranches = () => (dispatch) => {
+    return APIService.getAllBranches().then(
         (response) => {
             dispatch({
-                type: GET_ALL_REPOS_SUCCESS,
-                payload: { repos: response },
+                type: GET_ALL_BRANCHES_SUCCESS,
+                payload: { branches: response },
             });
             return Promise.resolve();
         },
@@ -24,7 +24,7 @@ export const getAllRepos = () => (dispatch) => {
             const message = (error.response && error.response.data) || error.message || error.toString();
 
             dispatch({
-                type: GET_ALL_REPOS_FAIL,
+                type: GET_ALL_BRANCHES_FAIL,
                 payload: message,
             });
 
@@ -33,12 +33,12 @@ export const getAllRepos = () => (dispatch) => {
     )
 }
 
-export const getRepo = (id) => (dispatch) => {
-    return APIService.getRepo(id).then(
+export const getBranch = (id) => (dispatch) => {
+    return APIService.getBranch(id).then(
         (response) => {
             dispatch({
-                type: GET_REPO_SUCCESS,
-                payload: { repo: response },
+                type: GET_BRANCH_SUCCESS,
+                payload: { branch: response },
             });
 
             return Promise.resolve();
@@ -47,7 +47,7 @@ export const getRepo = (id) => (dispatch) => {
             const message = (error.response && error.response.data) || error.message || error.toString();
 
             dispatch({
-                type: GET_REPO_FAIL,
+                type: GET_BRANCH_FAIL,
                 payload: message,
             });
 
