@@ -22,19 +22,19 @@ const getAllCommits = () => {
 
 // Get with auth
 const getUser = (id) => {
-  return axios.get(API_URL + `users/${id}`, { headers: authHeader() });
+  return axios.get(API_URL + `users/${id}/`, { headers: authHeader() });
 }
 
 const getRepo = (id) => {
-  return axios.get(API_URL + `repos/${id}`, { headers: authHeader() });
+  return axios.get(API_URL + `repos/${id}/`, { headers: authHeader() });
 }
 
 const getBranch = (id) => {
-  return axios.get(API_URL + `branches/${id}`, { headers: authHeader() });
+  return axios.get(API_URL + `branches/${id}/`, { headers: authHeader() });
 }
 
 const getCommit = (id) => {
-  return axios.get(API_URL + `commits/${id}`, { headers: authHeader() });
+  return axios.get(API_URL + `commits/${id}/`, { headers: authHeader() });
 }
 
 const getReposForUser = (id) => {
@@ -49,42 +49,46 @@ const getCommitsForUser = (id) => {
   return axios.get(API_URL + `users/${id}/commits`, { headers: authHeader() });
 }
 // POST requests
-const createRepository = () => {
-  return axios.post(API_URL + "repos/", { headers: authHeader() });
+const createRepository = (data) => {
+  return axios.post(API_URL + "repos/", data,  { headers: authHeader() });
+}
+
+const createBranch = (data) => {
+  return axios.post(API_URL + "repos/", data,  { headers: authHeader() });
 }
 
 // PUT requests
-const modifyRepository = (id) => {
-  return axios.put(API_URL + `repos/${id}`, { headers: authHeader() });
+const modifyRepository = (id, data) => {
+  return axios.put(API_URL + `repos/${id}/`, data, { headers: authHeader() });
 }
 
-const modifyBranch = (id) => {
-  return axios.put(API_URL + `branch/${id}`, { headers: authHeader() });
+const modifyBranch = (id, data) => {
+  return axios.put(API_URL + `branch/${id}/`, data, { headers: authHeader() });
 }
 
-const modifyCommit = (id) => {
-  return axios.put(API_URL + `commit/${id}`, { headers: authHeader() });
+const modifyCommit = (id, data) => {
+  return axios.put(API_URL + `commit/${id}/`, data, { headers: authHeader() });
 }
 
-const modifyUser = (id) => {
-  return axios.put(API_URL + `users/${id}`, { headers: authHeader() });
+const modifyUser = (id, data) => {
+  return axios.put(API_URL + `users/${id}/`, data, { headers: authHeader() });
 }
 
 // DELETE requests
 const deleteUser = (id) => {
-  return axios.delete(API_URL + `users/${id}`, { headers: authHeader() })
+  return axios.delete(API_URL + `users/${id}/`, { headers: authHeader() })
 }
 
 const deleteRepository = (id) => {
-  return axios.delete(API_URL + `repos/${id}`, { headers: authHeader() })
+  return axios.delete(API_URL + `repos/${id}/`, { headers: authHeader() })
 }
 
 const deleteBranch = (id) => {
-  return axios.delete(API_URL + `branches/${id}`, { headers: authHeader() })
+  return axios.delete(API_URL + `branches/${id}/`, { headers: authHeader() })
 }
 
 const deleteCommit = (id) => {
-  return axios.delete(API_URL + `commits/${id}`, { headers: authHeader() })
+  return axios.delete(API_URL + `commits/${id}/`, { headers: authHeader() })
 }
 
 
@@ -102,6 +106,7 @@ export default {
   getBranchesForUser,
   getCommitsForUser,
   createRepository,
+  createBranch,
   modifyRepository,
   modifyBranch,
   modifyCommit,

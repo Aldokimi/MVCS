@@ -20,6 +20,8 @@ const user_initialState = { userProvided: false, user: null };
 const user_repos_initialState = { allUserReposProvided: false, user_repos: null };
 const user_branches_initialState = { allUserBranchesProvided: false, user_branches: null };
 const user_commits_initialState = { allUserCommitsProvided: false, user_commits: null };
+const modify_user_initialState = { userModified: false, modified_user: null};
+const delete_user_initialState = { userDeleted: false};
 
 const all_users = (state = users_initialState, action) => {
     const { type, payload } = action;
@@ -86,6 +88,47 @@ const user_commits = (state = user_commits_initialState, action) => {
     }
 }
 
+
+const modify_user = (state = modify_user_initialState, action) => {
+    const { type, payload } = action;
+
+    switch (type) {
+        case MODIFY_USER_SUCCESS:
+            return {
+                ...state,
+                userModified: true,
+                modified_user: payload.modified_user
+            };
+        case MODIFY_USER_FAIL:
+            return {
+                ...state,
+                userModified: false,
+                modified_user: null,
+            };
+        default:
+            return state;
+    }
+}
+
+const delete_user = (state = delete_user_initialState, action) => {
+    const { type } = action;
+
+    switch (type) {
+        case DELETE_USER_SUCCESS:
+            return {
+                ...state,
+                userDeleted: true,
+            };
+        case DELETE_USER_FAIL:
+            return {
+                ...state,
+                userDeleted: false,
+            };
+        default:
+            return state;
+    }
+}
+
 // eslint-disable-next-line import/no-anonymous-default-export
 export {
     all_users,
@@ -93,4 +136,6 @@ export {
     user_repos,
     user_branches,
     user_commits,
+    modify_user,
+    delete_user
 };

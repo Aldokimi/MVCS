@@ -1,9 +1,21 @@
 /* eslint-disable no-useless-rename */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import user_image from '../../assets/user.png';
 import { getUser, getUserBranches, getUserCommits, getUserRepos } from "../../actions/users";
+import { modifyUser } from "../../actions/users";
 import { Navigate } from "react-router-dom";
+import { isEmail } from "validator";
+
+const validEmail = (value) => {
+  if (!isEmail(value)) {
+    return (
+      <div className="alert alert-danger" role="alert">
+        This is not a valid email.
+      </div>
+    );
+  }
+};
 
 const Profile = () => {
   // Redux data
@@ -39,7 +51,31 @@ const Profile = () => {
   const [numOfCommits, setNumOfCommits] = useState(0);
 
   // Data Modification
-  const [modify, setModify] = useState(false);
+  const [username, setUsername] = useState(undefined);
+  const [email, setEmail] = useState(undefined);
+  const [first_name, setFirstName] = useState(undefined);
+  const [last_name, setLastName] = useState(undefined);
+  const [date_of_birth, setDateOfBirth] = useState(undefined);
+  const [bio, setBio] = useState(undefined);
+
+  const modifyUserData = (e) =>{
+
+    let data = {}
+    if(username) data["username"] = username;
+    if(email) data["email"] = email;
+    if(first_name) data["first_name"] = first_name;
+    if(last_name) data["last_name"] = last_name;
+    if(date_of_birth){
+      data["date_of_birth"] = new Date(
+          new Date(date_of_birth).getTime() - new Date(date_of_birth).getTimezoneOffset() * 60000
+        ).toISOString();
+    }
+    if(bio) data["bio"] = bio;
+
+    dispatch(modifyUser(current_user.user_id, data)).then(() => {
+      window.location.reload();
+    });
+  };
 
   // Users actions
   useEffect(() => {
@@ -202,24 +238,24 @@ const Profile = () => {
                             <div className="col">
                               <div className="mb-3">
                                 <label className="form-label" htmlFor="username"><strong>Username</strong></label>
-                                {modify ? 
                                   <input className="form-control" type="text" id="username" 
-                                  placeholder={ me_as_user.username } name="username" value={ me_as_user.username } />
-                                :
-                                  <h6>{ me_as_user.username }</h6>
-                                }
+                                  placeholder={ me_as_user.username } name="username" defaultValue={ me_as_user.username }
+                                  onChange={(e) => {
+                                    const _username = e.target.value;
+                                    setUsername(_username);
+                                  }} />
                               </div>
                             </div>
                             <div className="col">
                               <div className="mb-3">
                                 <label className="form-label" htmlFor="email"><strong>Email Address</strong></label>
-                                {console.log(me_as_user)}
-                                {modify ? 
                                   <input className="form-control" type="email" id="email" 
-                                  placeholder={ me_as_user.email } name="email" value={ me_as_user.email } />
-                                  :
-                                  <h6>{ me_as_user.email }</h6>
-                                }
+                                  placeholder={ me_as_user.email } name="email" defaultValue={ me_as_user.email }
+                                  validations={[validEmail]}
+                                  onChange={(e) => {
+                                    const _email = e.target.value;
+                                    setEmail(_email);
+                                  }}/>
                               </div>
                             </div>
                           </div>
@@ -227,34 +263,35 @@ const Profile = () => {
                             <div className="col">
                               <div className="mb-3">
                                 <label className="form-label" htmlFor="first_name"><strong>First Name</strong></label>
-                                {modify ? 
                                   <input className="form-control" type="text" id="first_name" 
-                                  placeholder={ me_as_user.first_name } name="first_name" value={ me_as_user.first_name } />
-                                  :
-                                  <h6>{ me_as_user.first_name ? me_as_user.first_name : "Not sat yet" }</h6>
-                                }
+                                  placeholder={ me_as_user.first_name } name="first_name" defaultValue={ me_as_user.first_name }
+                                  onChange={(e) => {
+                                    const _first_name = e.target.value;
+                                    setFirstName(_first_name);
+                                  }}/>
                               </div>
                             </div>
                             <div className="col">
                               <div className="mb-3">
                                 <label className="form-label" htmlFor="last_name"><strong>Last Name</strong></label>
-                                {modify ? 
                                   <input className="form-control" type="text" id="last_name" 
-                                  placeholder={ me_as_user.last_name } name="last_name" value={ me_as_user.last_name } />
-                                  :
-                                  <h6>{ me_as_user.last_name ? me_as_user.last_name : "Not sat yet" }</h6>
-                                }
+                                  placeholder={ me_as_user.last_name } name="last_name" defaultValue={ me_as_user.last_name }
+                                  onChange={(e) => {
+                                    const _last_name = e.target.value;
+                                    setLastName(_last_name);
+                                  }}/>
                               </div>
                             </div>
                             <div className="col">
                               <div className="mb-3">
                                 <label className="form-label" htmlFor="date_of_birth"><strong>Date of Birth</strong></label>
-                                {modify ? 
                                   <input className="form-control" type="date" id="date_of_birth" 
-                                  placeholder={ me_as_user.data_of_birth } name="date_of_birth" value={ me_as_user.data_of_birth } />
-                                  :
-                                  <h6>{ me_as_user.data_of_birth ? me_as_user.data_of_birth.split('T')[0] : "Not sat yet" }</h6>
-                                }
+                                  name="date_of_birth" defaultValue={ me_as_user.data_of_birth 
+                                    ? new Date(me_as_user.data_of_birth).toISOString().split('T')[0] : null }
+                                  onChange={(e) => {
+                                    const _data_of_birth = e.target.value;
+                                    setDateOfBirth(_data_of_birth);
+                                  }}/>
                               </div>
                             </div>
                           </div>
@@ -262,27 +299,20 @@ const Profile = () => {
                             <div className="col-12">
                               <div className="mb-3">
                                 <label className="form-label" htmlFor="first_name"><strong>Bio</strong></label>
-                                {modify ? 
                                   <textarea className="form-control" rows="4" name="bio" 
-                                  placeholder="hello" value={me_as_user.bio}></textarea>
-                                  :
-                                  <h6>{ me_as_user.bio ? me_as_user.bio : "Not sat yet" }</h6>
-                                }
+                                  placeholder="hello" defaultValue={me_as_user.bio}
+                                  onChange={(e) => {
+                                    const _bio = e.target.value;
+                                    setBio(_bio);
+                                  }}></textarea>
                               </div>
                             </div>
                           </div>
                           <div className="mb-3">
-                            { modify ?
                               <button className="btn btn-danger btn-sm" onClick={(e) => {
                                 e.preventDefault();
-                                setModify(false);
+                                modifyUserData(e);
                               }}>Save Settings</button>
-                            :
-                              <button className="btn btn-primary btn-sm" onClick={(e) => {
-                                e.preventDefault();
-                                setModify(true);
-                              }}>change Settings</button>
-                            }
                           </div>
                         </form>
                       </div>

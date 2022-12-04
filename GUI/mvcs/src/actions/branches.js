@@ -3,6 +3,8 @@ import {
     GET_ALL_BRANCHES_FAIL,
     GET_BRANCH_SUCCESS,
     GET_BRANCH_FAIL,
+    CREATE_BRANCH_SUCCESS,
+    CREATE_BRANCH_FAIL,
     MODIFY_BRANCH_SUCCESS,
     MODIFY_BRANCH_FAIL,
     DELETE_BRANCH_SUCCESS,
@@ -51,6 +53,48 @@ export const getBranch = (id) => (dispatch) => {
                 payload: message,
             });
 
+            return Promise.reject();
+        }
+    )
+}
+
+export const createBranch = (id, data) => (dispatch) => {
+    return APIService.createBranch(id, data).then(
+        (response) => {
+            dispatch({ type: CREATE_BRANCH_SUCCESS, payload: { created_branch: response }, });
+            return Promise.resolve();
+        },
+        (error) => {
+            const message = (error.response && error.response.data) || error.message || error.toString();
+            dispatch({ type: CREATE_BRANCH_FAIL, payload: message, });
+            return Promise.reject();
+        }
+    )
+}
+
+export const modifyBranch = (id, data) => (dispatch) => {
+    return APIService.modifyBranch(id, data).then(
+        (response) => {
+            dispatch({ type: MODIFY_BRANCH_SUCCESS, payload: { modified_branch: response }, });
+            return Promise.resolve();
+        },
+        (error) => {
+            const message = (error.response && error.response.data) || error.message || error.toString();
+            dispatch({ type: MODIFY_BRANCH_FAIL, payload: message, });
+            return Promise.reject();
+        }
+    )
+}
+
+export const deleteBranch = (id) => (dispatch) => {
+    return APIService.deleteBranch(id).then(
+        (response) => {
+            dispatch({ type: DELETE_BRANCH_SUCCESS, payload: { deleted_branch: response }, });
+            return Promise.resolve();
+        },
+        (error) => {
+            const message = (error.response && error.response.data) || error.message || error.toString();
+            dispatch({ type: DELETE_BRANCH_FAIL, payload: message, });
             return Promise.reject();
         }
     )

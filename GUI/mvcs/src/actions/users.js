@@ -86,3 +86,31 @@ export const getUserCommits = (id) => (dispatch) => {
         }
     )
 }
+
+export const modifyUser = (id, data) => (dispatch) => {
+    return APIService.modifyUser(id, data).then(
+        (response) => {
+            dispatch({ type: MODIFY_USER_SUCCESS, payload: { modified_user: response }, });
+            return Promise.resolve();
+        },
+        (error) => {
+            const message = (error.response && error.response.data) || error.message || error.toString();
+            dispatch({ type: MODIFY_USER_FAIL, payload: message, });
+            return Promise.reject();
+        }
+    )
+}
+
+export const deleteUser = (id) => (dispatch) => {
+    return APIService.deleteUser(id).then(
+        (response) => {
+            dispatch({ type: DELETE_USER_SUCCESS, payload: { deleted_user: response }, });
+            return Promise.resolve();
+        },
+        (error) => {
+            const message = (error.response && error.response.data) || error.message || error.toString();
+            dispatch({ type: DELETE_USER_FAIL, payload: message, });
+            return Promise.reject();
+        }
+    )
+}

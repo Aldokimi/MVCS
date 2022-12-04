@@ -55,3 +55,31 @@ export const getCommit = (id) => (dispatch) => {
         }
     )
 }
+
+export const modifyCommit = (id, data) => (dispatch) => {
+    return APIService.modifyCommit(id, data).then(
+        (response) => {
+            dispatch({ type: MODIFY_COMMIT_SUCCESS, payload: { modified_commit: response }, });
+            return Promise.resolve();
+        },
+        (error) => {
+            const message = (error.response && error.response.data) || error.message || error.toString();
+            dispatch({ type: MODIFY_COMMIT_FAIL, payload: message, });
+            return Promise.reject();
+        }
+    )
+}
+
+export const deleteCommit = (id) => (dispatch) => {
+    return APIService.deleteCommit(id).then(
+        (response) => {
+            dispatch({ type: DELETE_COMMIT_SUCCESS, payload: { deleted_commit: response }, });
+            return Promise.resolve();
+        },
+        (error) => {
+            const message = (error.response && error.response.data) || error.message || error.toString();
+            dispatch({ type: DELETE_COMMIT_FAIL, payload: message, });
+            return Promise.reject();
+        }
+    )
+}

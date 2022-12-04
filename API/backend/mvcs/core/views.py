@@ -17,7 +17,7 @@ from .serializers import CreateUserSerializer, UpdateUserSerializer,\
             CreateBranchSerializer, UpdateBranchSerializer,\
                 CreateCommitSerializer, UpdateCommitSerializer
 from .utils import get_tokens_for_user, get_repo_details,\
-     get_branches_commits, get_repo_branches, get_user_repositories
+     get_user_branches, get_repo_branches, get_user_repositories, get_user_commits
 
 from django.http import Http404
 from django.contrib.auth import authenticate, login, logout
@@ -148,6 +148,58 @@ class UserDetail(APIView):
         shutil.rmtree('/home/mvcs/' + user.username + '/')
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class UserRepositories(APIView):
+    """
+    Get all the repositories for a user.
+    """
+    def get_object(self, pk):
+        try:
+            return User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            raise Http404
+    
+    def get(self, request, pk, format=None):
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
+        user = self.get_object(pk)
+        data = get_user_repositories(user.id)
+        return Response(data)
+
+class UserBranches(APIView):
+    """
+    Get all the branches for a user.
+    """
+    def get_object(self, pk):
+        try:
+            return User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            raise Http404
+    
+    def get(self, request, pk, format=None):
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
+        user = self.get_object(pk)
+        data = get_user_branches(user.id)
+        return Response(data)
+
+class UserCommits(APIView):
+    """
+    Get all the branches for a user.
+    """
+    def get_object(self, pk):
+        try:
+            return User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            raise Http404
+    
+    def get(self, request, pk, format=None):
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
+        user = self.get_object(pk)
+        data = get_user_commits(user.id)
+        return Response(data)
+
 
 
 """
