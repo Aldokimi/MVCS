@@ -100,11 +100,9 @@ const User = () => {
         }
     }, [targetUser, repos, usersDataGathered, reposDataGathered]);
 
-    if(usersDataLoaded && usersDataGathered){
-        if(targetUser == null){
-            return (<Navigate to="/" />);
-        }
-    }
+    if (!targetUser) {
+        return (<Navigate to="/" />);
+      }
     
     return ( usersDataLoaded && usersDataGathered ? 
         ( 

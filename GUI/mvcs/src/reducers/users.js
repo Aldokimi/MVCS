@@ -67,9 +67,9 @@ const user_branches = (state = user_branches_initialState, action) => {
 
     switch (type) {
         case GET_USER_BRANCHES_SUCCESS:
-            return { ...state, allUserReposProvided: true, user_branches: payload.user_branches };
+            return { ...state, allUserBranchesProvided: true, user_branches: payload.user_branches };
         case GET_USER_BRANCHES_FAIL:
-            return { ...state, allUserReposProvided: false, user_branches: null, };
+            return { ...state, allUserBranchesProvided: false, user_branches: null, };
         default:
             return state;
     }
@@ -80,9 +80,9 @@ const user_commits = (state = user_commits_initialState, action) => {
 
     switch (type) {
         case GET_USER_COMMITS_SUCCESS:
-            return { ...state, allUserReposProvided: true, user_commits: payload.user_commits };
+            return { ...state, allUserCommitsProvided: true, user_commits: payload.user_commits };
         case GET_USER_COMMITS_FAIL:
-            return { ...state, allUserReposProvided: false, user_commits: null, };
+            return { ...state, allUserCommitsProvided: false, user_commits: null, };
         default:
             return state;
     }

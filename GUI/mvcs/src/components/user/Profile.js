@@ -1,9 +1,8 @@
 /* eslint-disable no-useless-rename */
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import user_image from '../../assets/user.png';
-import { getUser, getUserBranches, getUserCommits, getUserRepos } from "../../actions/users";
-import { modifyUser } from "../../actions/users";
+import { getUser, getUserBranches, getUserCommits, getUserRepos, modifyUser } from "../../actions/users";
 import { Navigate } from "react-router-dom";
 import { isEmail } from "validator";
 
@@ -36,7 +35,6 @@ const Profile = () => {
   const [reposDataLoaded, setReposDataLoaded] = useState(false);
   const [reposDataGathered, setReposDataGathered] = useState(false);
   const [numOfRepos, setNumOfRepos] = useState(0);
-
 
   // Branches states
   const [branches, setBranches] = useState({});

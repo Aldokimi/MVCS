@@ -16,20 +16,12 @@ import APIService from "../services/api.service";
 export const getAllRepos = () => (dispatch) => {
     return APIService.getAllRepos().then(
         (response) => {
-            dispatch({
-                type: GET_ALL_REPOS_SUCCESS,
-                payload: { repos: response },
-            });
+            dispatch({ type: GET_ALL_REPOS_SUCCESS, payload: { repos: response }, });
             return Promise.resolve();
         },
         (error) => {
             const message = (error.response && error.response.data) || error.message || error.toString();
-
-            dispatch({
-                type: GET_ALL_REPOS_FAIL,
-                payload: message,
-            });
-
+            dispatch({ type: GET_ALL_REPOS_FAIL, payload: message, });
             return Promise.reject();
         }
     )
@@ -38,21 +30,12 @@ export const getAllRepos = () => (dispatch) => {
 export const getRepo = (id) => (dispatch) => {
     return APIService.getRepo(id).then(
         (response) => {
-            dispatch({
-                type: GET_REPO_SUCCESS,
-                payload: { repo: response },
-            });
-
+            dispatch({ type: GET_REPO_SUCCESS, payload: { repo: response }, });
             return Promise.resolve();
         },
         (error) => {
             const message = (error.response && error.response.data) || error.message || error.toString();
-
-            dispatch({
-                type: GET_REPO_FAIL,
-                payload: message,
-            });
-
+            dispatch({ type: GET_REPO_FAIL, payload: message, });
             return Promise.reject();
         }
     )

@@ -46,7 +46,7 @@ const branch = (state = branch_initialState, action) => {
             return {
                 ...state,
                 oneBranchProvided: true,
-                branch: payload.me_as_user
+                branch: payload.branch
             };
         case GET_BRANCH_FAIL:
             return {
@@ -67,7 +67,7 @@ const create_branch = (state = create_branch_initialState, action) => {
             return {
                 ...state,
                 branchCreated: true,
-                created_branch: payload.created_branc
+                created_branch: payload.created_branch
             };
         case CREATE_BRANCH_FAIL:
             return {

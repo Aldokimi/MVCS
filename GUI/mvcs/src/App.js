@@ -15,6 +15,8 @@ import Footer from "./components/layout/Footer";
 import PageNotFound from "./components/layout/PageNotFound";
 import Users from "./components/user/Users";
 import User from "./components/user/User";
+import Repositories from "./components/repo/Repositories";
+import Repo from "./components/repo/Repo";
 
 
 
@@ -42,6 +44,8 @@ const App = () => {
             <Route path="/register" element={<Register />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/users" element={<Users />} />
+            <Route path="/repositories" element={<Repositories />} />
+            <Route path="/repositories/:repo_id" element={<Repo />} />
             <Route path="/:username" element={<User />} />
             <Route path="/*" element={<PageNotFound />} />
           </Routes>

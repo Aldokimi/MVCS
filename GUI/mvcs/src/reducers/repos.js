@@ -46,7 +46,7 @@ const repo = (state = repo_initialState, action) => {
             return {
                 ...state,
                 oneRepoDataProvided: true,
-                repo: payload.me_as_user
+                repo: payload.repo
             };
         case GET_REPO_FAIL:
             return {
