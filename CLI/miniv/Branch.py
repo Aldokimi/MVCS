@@ -1,7 +1,6 @@
 import os
 import shutil
 import tarfile
-
 import requests
 
 from . import Repository
@@ -18,6 +17,7 @@ class branch():
 
     def __init__(self, args) -> None:
         self.__list   = args.list
+        self.__list_remote = args.remote
         self.__create = args.create_b
         self.__delete = args.delete_b
         self.__edit   = args.rename_b
@@ -29,6 +29,8 @@ class branch():
 
         if self.  __list:
             self. __list_branches()
+        elif self.__list_remote:
+            self.__list_remote_branches()
         elif self.__create:
             self.__create = str(self.__create[0])
             self. __create_branch()
@@ -52,6 +54,32 @@ class branch():
             result+=f"{branch_name}: has {num_commits} commits\n"
         ph.ok(" " + result[:-1])
 
+    def __list_remote_branches(self):
+        user_id = self.__repo_management.get_owner_data()["id"]
+        API_end_point = f'http://127.0.0.1:8000/api/v1/users/{user_id}/branches/'
+        repo_name = self.__repo_management.get_repo_config()["name"]
+        headers={
+            "Authorization": f"Bearer {self.__user_mgt.get_user_data()['access_token']}",
+        }
+        response = requests.get(API_end_point, headers=headers, )
+        
+        if response.status_code != 200:
+            raise Exception("Couldn't get the branches of the current user!")
+
+        repo_branches = response.json()[repo_name]
+        ph.msg(ph.cyan(" All branches in the remote are: "))
+        for branch in repo_branches:
+            ph.exp("  " +branch["name"])
+
+    def __get_last_commit(self):
+        branch_name = self.__user_mgt.get_user_data()["current_branch"]
+        _, commit_a = self.__user_mgt.get_last_new_commit(
+            self.__repo_management.get_branch_data(branch_name)["id"]
+        )
+        commit_b = self.__repo_management.get_latest_commit(branch_name)
+        commit = self.__repo_management.get_largest_commit(commit_a, commit_b)
+        return commit
+
     def __create_branch(self):
         # Create the new branch folder
         new_branch_folder = os.path.join(self.__config_folder, self.__create)
@@ -62,7 +90,7 @@ class branch():
             return
         
         # Copy the last commit from main to the new branch
-        last_commit_id = self.__repo_management.get_latest_commit('main')['unique_id']
+        last_commit_id = self.__get_last_commit()['unique_id']
         try:
             shutil.copy2(
                 os.path.join(self.__config_folder, f"main{os.sep}{last_commit_id}.tar.xz"),
@@ -83,6 +111,8 @@ class branch():
             self.__repo_management.create_branch(branch_data.json())
         else:
             raise Exception('Error, cannot create a branch in the API side!')
+        
+        ph.ok(" " + "Created branch successfully!")
 
     def __delete_branch(self):
 
@@ -115,6 +145,7 @@ class branch():
 
         # Delete a branch in repo_config.json
         self.__repo_management.delete_branch(branch_data=branch_data)
+        ph.ok(" " + "Deleted successfully!")
 
     def __edit_branch(self):
         branch_data = self.__repo_management.get_branch_data(
@@ -139,13 +170,15 @@ class branch():
         )
         if response.status_code != 200:
             raise Exception('Error, cannot rename a branch in the API side!')
+        
+        ph.ok(" " + "Branch edited successfully!")
 
     def __operate_branch_on_API(self, method, branch_id=None, branch_name=None, new_branch_name=None):
         '''
         Create, delete, or edit a branch inside the repo_config.json and in the API.
         '''
-        API_end_point = 'http://127.0.0.1:8000/api/branches/' if method == 'post'\
-             else 'http://127.0.0.1:8000/api/branches/' + f'{branch_id}/'
+        API_end_point = 'http://127.0.0.1:8000/api/v1/branches/' if method == 'post'\
+             else 'http://127.0.0.1:8000/api/v1/branches/' + f'{branch_id}/'
     
         data = {
             "repo": self.__repo_management.get_repo_config()['id'],

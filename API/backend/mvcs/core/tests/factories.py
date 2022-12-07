@@ -5,7 +5,7 @@ from ..models import User, Repository,  Branch, Commit
 class UserFactory(DjangoModelFactory):
     class Meta:
         model = User
-    username = factory.Faker('name')
+    username = factory.Faker('user_name')
     email = factory.Faker('email')
     date_of_birth = factory.Faker('date_time')
     is_active = factory.Faker('pybool')
@@ -16,8 +16,9 @@ class UserFactory(DjangoModelFactory):
     first_name = factory.Faker('first_name')
     last_name = factory.Faker('last_name')
     bio = factory.Faker('sentence')
-    date_of_birth =factory.Faker('date_time')
+    date_of_birth = factory.Faker('date_time')
     profile_picture = factory.Faker('image_url')
+    public_key= factory.Faker('uuid4')
     password = factory.PostGenerationMethodCall('set_password','password')
 
 class RepositoryFactory(DjangoModelFactory):
@@ -28,7 +29,8 @@ class RepositoryFactory(DjangoModelFactory):
     date_created = factory.Faker('date_time')
     last_updated = factory.Faker('date_time')
     private = factory.Faker('pybool')
-    contributors = factory.Faker(UserFactory)
+    clone_url = "mvcs@172.24.153.165:~/doki/test"
+    description = factory.Faker('sentence')
     owner = factory.Faker(UserFactory)
 
 class BranchFactory(DjangoModelFactory):

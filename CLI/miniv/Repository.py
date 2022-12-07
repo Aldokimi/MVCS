@@ -4,7 +4,6 @@ import tarfile
 import requests
 import os
 import json
-import requests
 
 from getpass import getpass
 from helper import print_helper as ph
@@ -31,9 +30,7 @@ class repo():
             if not os.path.exists(repo_path):
                 os.mkdir(repo_path, 0o755)
             else:
-                if os.path.exists(repo_path):
-                    shutil.rmtree(repo_path)
-                ph.err("Error, there is already a directory with the same repo name!")
+                ph.err(f"Error, there is already a directory with the same name <{repo_name}>!")
                 return
 
             # create the config folder path
@@ -59,7 +56,7 @@ class repo():
             except Exception as e:
                 if os.path.exists(repo_path):
                     shutil.rmtree(repo_path)
-                    pass
+                    print(e)
 
         elif self.__create_request:
             self.create()
@@ -77,7 +74,7 @@ class repo():
         
         # Login into the API
         response = requests.post(
-            'http://127.0.0.1:8000/api/login/', 
+            'http://127.0.0.1:8000/api/v1/login/', 
             json = {"email":f"{email}", "password": f"{password}"})
 
         if response.status_code != 200:
@@ -85,7 +82,7 @@ class repo():
             email = str(input("Email: "))
             password = str(getpass(prompt='Password: '))
             response = requests.post(
-                'http://127.0.0.1:8000/api/login/', 
+                'http://127.0.0.1:8000/api/v1/login/', 
                 json = {"email":f"{email}", "password": f"{password}"})
 
 
@@ -135,15 +132,20 @@ class repo():
 
         # Login user
         user_data = self.login()
+        # print(user_data)
         self.create_user_configuration(user_data)
         self.__UM = UM.UserManagement(self.__config_folder)
 
         # Creating repo_config.json
+        headers={
+            "Authorization": f"Bearer {self.__UM.get_user_data()['access_token']}",
+        }
+
         repo_config_file = os.path.join(self.__config_folder, "repo_config.json")
         if not os.path.isfile(repo_config_file):
             try:
                 with open(repo_config_file, 'w+') as f:
-                    response = requests.get(f'http://127.0.0.1:8000/api/repos/data/{repo_owner}/{repo_name}/')
+                    response = requests.get(f'http://127.0.0.1:8000/api/v1/repos/data/{repo_owner}/{repo_name}/', headers=headers)
                     if response.status_code != 200:
                         raise Exception("Error, requesting repo data failed, please check your clone URL and try again")
                     repo_data = response.json()
@@ -173,7 +175,7 @@ class repo():
                     ]
                 )
                 if p.returncode != 0 :
-                    raise Exception("Error, Downloading repo data failed!")
+                    raise Exception("Error, Downloading repo data failed, make sure to upload the ssk key to the MVCShub!")
         except subprocess.CalledProcessError or p.returncode != 0:
             raise Exception("Error, error occurred during downloading the data!")
 

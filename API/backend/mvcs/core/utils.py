@@ -46,7 +46,31 @@ def get_repo_details(repo_id, owner_id):
 
 def get_user_repositories(user_id):
     repos = Repository.objects.filter(owner=user_id)
-    return repos
+    serializer = CreateRepositorySerializer(repos, many=True)
+    return serializer.data
+
+def get_user_branches(user_id):
+    branches= {}
+    repos = Repository.objects.filter(owner=user_id)
+    for repo in repos:
+        repo_data = CreateRepositorySerializer(repo).data
+        branches_in_repo = Branch.objects.filter(repo=repo.id)
+        serializer = CreateBranchSerializer(branches_in_repo, many=True)
+        branches[repo.name] = serializer.data
+    
+    return branches
+
+def get_user_commits(user_id):
+    commits = {}
+    repos = Repository.objects.filter(owner=user_id)
+    for repo in repos:
+        branches = Branch.objects.filter(repo=repo.id)
+        for branch in branches:
+            commits_in_branch = Commit.objects.filter(branch=branch.id)
+            serializer = CreateCommitSerializer(commits_in_branch, many=True)
+            commits[branch.name] = serializer.data
+
+    return commits
 
 def get_repo_branches(repo_id):
     branches = Branch.objects.filter(repo=repo_id)

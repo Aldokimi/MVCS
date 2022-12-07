@@ -27,7 +27,11 @@ class diff():
             
         if self.__file1:
             self.__file1 = str(self.__file1)
-            test_dir, self.__file2 = self.__get_file2()
+            try:
+                test_dir, self.__file2 = self.__get_file2()
+            except:
+                ph.err(" This file might not exists or its a new file!")
+                return
         else:
             raise Exception('Error during running diff, wrong arguments!')
 
@@ -86,7 +90,7 @@ class diff():
             for file, diff  in diffs.items():
                 ph.msg(f"\n  ➜  {file} : \n\t {diff}")
         else:
-            ph.warn("There are no changes in the repository!")
+            ph.ok("There are no changes in the repository!")
 
 def diff_repo(config_folder, repo_management, user_mgt):
     has_new_change = False

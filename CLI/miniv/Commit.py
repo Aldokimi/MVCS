@@ -4,6 +4,8 @@ import shutil
 import uuid
 import lzma
 import tarfile
+
+from . import Diff
 from . import Repository
 import requests
 
@@ -100,12 +102,21 @@ class commit():
         return commit_unique_id
 
     def __commit_message_commit(self):
+        # Check if we have un committed changes on the current directory
+        diffs, new_files = Diff.diff_repo(
+            self.__config_folder, self.__repo_management, self.__user_mgt)
+        if not diffs and len(new_files) == 0:
+            ph.err("You have nothing changed to commit!")
+            return
+
         commit_unique_id = self.__create_commit_folder()
         branch_data = self.__repo_management.get_branch_data(
             self.__user_mgt.get_user_data()['current_branch'])
+
         if not branch_data:
             raise Exception(
                 "Error, couldn't get branch data while renaming the branch!")
+                
         branch_id = branch_data['id']
         committer = self.__repo_management.get_owner_data()['id']
 
@@ -176,7 +187,7 @@ def undo(config_folder, repo_management, user_management):
             last_commit = repo_management.get_latest_commit(
                     user_management.get_user_data()["current_branch"]
                 )
-            API_end_point = 'http://127.0.0.1:8000/api/commits/' + f'{last_commit["id"]}/'
+            API_end_point = 'http://127.0.0.1:8000/api/v1/commits/' + f'{last_commit["id"]}/'
             
             headers={
                 "Authorization": f"Bearer {user_management.get_user_data()['access_token']}",
@@ -240,6 +251,7 @@ def update_repository(config_folder, repo_management, user_management, last_comm
         )[1]
     else:
         commit_data = last_commit
+
     commit_unique_id = commit_data["unique_id"]
     commit_file_name = os.path.join(
         config_folder, 

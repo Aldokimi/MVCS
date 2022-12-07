@@ -42,7 +42,7 @@ class merge():
             ph.warn("Are you sure that you want to merge the current branch "
                 f"<{self.__user_mgt.get_user_data()['current_branch']}> with the content of <{self.__branch}> ? (Y/n)")
             
-            answer = input("\n\t\t")
+            answer = input("\n\t")
             ph.msg("")
             if answer == "N" or answer == "n" or answer == "NO" or answer == "No" or answer  == "no":
                 ph.ok(" Merging aborted!")
@@ -133,6 +133,16 @@ class merge():
 
                 if has_merge_conflicts:
                     merge_conflict_files.append(file + "\n")
+
+            if len(merge_conflict_files) > 0:
+                ph.msg("You have merge conflicts in the following files: ")
+                for file_x in merge_conflict_files:
+                    ph.msg(ph.magenta(file_x))
+                ph.msg("Do you want to continue the merge? (Y/n)")
+                answer = input("\n\t")
+                if answer == "N" or answer == "n" or answer == "NO" or answer == "No" or answer  == "no":
+                    ph.err(" Merging aborted!")
+                    return
 
             # Replace the working directory with the new directory
             self.__repo_management.delete_working_directory()

@@ -23,7 +23,7 @@ class UserManagement():
 
     def login(self):
         response = requests.post(
-            'http://127.0.0.1:8000/api/login/', 
+            'http://127.0.0.1:8000/api/v1/login/', 
             json = {
                 "email": f"{self.__user_config['email']}", 
                 "password": f"{self.decrypt_password(self.__user_config['password'])}"
