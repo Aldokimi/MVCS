@@ -2,6 +2,8 @@ import lzma
 import os, shutil, subprocess
 import tarfile
 import uuid
+from netifaces import AF_INET
+import netifaces as ni
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -133,6 +135,10 @@ class UserDetail(APIView):
                             user.username, 
                             serializer.validated_data['username']
                         )
+                if request.data["public_key"]:
+                    # Add this public key to the end of the authorized_keys file
+                    with open("/home/mvcs/.ssh/authorized_keys", "a") as myfile:
+                        myfile.write("\n" + serializer.validated_data['test.txt'])
             except: pass
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -215,6 +221,16 @@ class RepositoryList(APIView):
         except Repository.DoesNotExist:
             raise Http404
 
+    def get_user(self, pk):
+        try:
+            return User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            raise Http404
+
+    def get_clone_url(self, username, repo_name):
+        ip = ni.ifaddresses('eth0')[AF_INET][0]['addr']
+        return f'mvcs@{ip}:~/{username}/{repo_name}'
+
     def get_serializer_class(self):
         if self.request.method == "POST":
             return CreateRepositorySerializer
@@ -230,6 +246,11 @@ class RepositoryList(APIView):
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
         serializer = self.get_serializer_class()
+        # get the clone URL
+        username = self.get_user(request.data["owner"]).username
+        print(username, request.data["name"])
+        request.data["clone_url"] = self.get_clone_url(username, request.data["name"])
+
         repositories = serializer(data=request.data)
         if repositories.is_valid():
             repositories.save()
@@ -395,6 +416,12 @@ class BranchList(APIView):
             return Branch.objects.filter(repo=pk)
         except Repository.DoesNotExist:
             raise Http404
+    def get_repo_object(self, pk):
+        try:
+            return Repository.objects.filter(repo=pk)
+        except Repository.DoesNotExist:
+            raise Http404
+
     def get_serializer_class(self):
         if self.request.method == "POST":
             return CreateBranchSerializer
@@ -411,9 +438,10 @@ class BranchList(APIView):
         branch = serializer(data=request.data)
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
-        if branch.repo.owner.id is not self.request.user.id and\
-            self.request.user.id not in [user.id for user in branch.repo.contributors.all()]:
-            raise PermissionDenied()
+
+        # if request.data['repo'] and self.get_repo_object(request.data['repo']).owner.id is not self.request.user.id and\
+        #     self.request.user.id not in [user.id for user in self.get_repo_object(request.data['repo']).contributors.all()]:
+        #     raise PermissionDenied()
 
         if branch.is_valid():
             # Check if we have a branch with the same name in the belonging repository

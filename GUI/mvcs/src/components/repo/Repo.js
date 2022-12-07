@@ -104,7 +104,7 @@ const Repo = () => {
 
 
     if (!current_user) {
-        return (<Navigate to="/" />);
+        return (<Navigate to="/login" />);
     }
 
     return( true ?

@@ -61,6 +61,7 @@ class User(AbstractBaseUser):
     bio = models.TextField(blank=True, null=True, max_length=2000)
     date_of_birth = models.DateTimeField(verbose_name="date of birth", null=True)
     profile_picture = models.ImageField(upload_to="image", blank=True, null=True)
+    public_key = models.TextField(blank=True, default='')
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
@@ -91,6 +92,8 @@ class Repository(models.Model):
     last_updated = models.DateTimeField(verbose_name="date joined", default=timezone.now)
     contributors = models.ManyToManyField(User, null=True, related_name='repo_contributors')
     private = models.BooleanField(default=False)
+    clone_url = models.CharField(max_length=500, null=True)
+    description = models.TextField(blank=True, null=True, max_length=2000)
 
 class Branch(models.Model):
     repo = models.ForeignKey(Repository, on_delete=models.CASCADE)

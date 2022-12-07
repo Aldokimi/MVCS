@@ -35,7 +35,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id','username','password','email','is_active','is_admin','linkedin_token','date_joined',
-            'last_login','first_name','last_name','bio','date_of_birth','profile_picture',
+            'last_login','first_name','last_name','bio','date_of_birth','profile_picture', 'public_key',
         ]
         extra_kwargs = {
             'password': {'write_only':True}
@@ -48,24 +48,24 @@ class UpdateUserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id','username','email','linkedin_token','first_name',
-            'last_name','bio','date_of_birth','profile_picture',
+            'last_name','bio','date_of_birth','profile_picture', 'public_key',
         ]
 
 class CreateRepositorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Repository
-        fields=['id','name','date_created','last_updated','private','contributors','owner',]
+        fields=['id','name','date_created','last_updated','private','contributors','owner', 'clone_url', 'description', ]
 
 class UpdateRepositorySerializer(serializers.ModelSerializer):
     name = serializers.CharField(max_length=100, required=False)
     class Meta:
         model = Repository
-        fields=['name', 'private', 'contributors',]
+        fields=['name', 'private', 'contributors', 'description', ]
 
 class CreateBranchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Branch
-        fields=['repo','id','name','date_created','has_locked_files','locked',]
+        fields=['id','name','date_created','has_locked_files','locked', 'repo',]
 
 class UpdateBranchSerializer(serializers.ModelSerializer):
     name = serializers.CharField(max_length=100, required=False)

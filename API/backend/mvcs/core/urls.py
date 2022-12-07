@@ -15,9 +15,9 @@ urlpatterns = [
     # Models URLs
     path('users/', views.UserList.as_view()),
     path('users/<int:pk>/', views.UserDetail.as_view()),
-    path('users/<int:pk>/repos', views.UserRepositories.as_view()),
-    path('users/<int:pk>/branches', views.UserBranches.as_view()),
-    path('users/<int:pk>/commits', views.UserCommits.as_view()),
+    path('users/<int:pk>/repos/', views.UserRepositories.as_view()),
+    path('users/<int:pk>/branches/', views.UserBranches.as_view()),
+    path('users/<int:pk>/commits/', views.UserCommits.as_view()),
 
 
     path('repos/', views.RepositoryList.as_view()),

@@ -13,17 +13,20 @@ class status():
         self.__repo_management = RM.RepoManagement(self.__config_folder)
         self.__user_mgt = UM.UserManagement(self.__config_folder)
 
-        diff, new_files = Diff.diff_repo(self.__config_folder, self.__repo_management, self.__user_mgt)
+        diff, new_files = Diff.diff_repo(
+            self.__config_folder, self.__repo_management, self.__user_mgt)
         if not diff and len(new_files) == 0:
             ph.ok(" Nothing is changed!")
 
         if diff:
+            ph.warn(" You have the following changes :")
             print("")
             ph.msg(ph.yellow("Changed files: "))
             for changed_file in diff.keys():
                 print("  ➜ ", changed_file)
         
         if new_files:
+            ph.warn(" You have the following changes :")
             print("")
             ph.msg(ph.red("New files: "))
             for file in new_files:

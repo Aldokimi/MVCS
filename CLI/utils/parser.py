@@ -46,8 +46,8 @@ def branch_parser(subparsers):
         'branch', help=desc, description=desc.capitalize(), aliases=['br'])
 
     list_group = branch_parser.add_argument_group('list branches')
-    list_group.add_argument( '-l', '--list', help='list local branches', action='store_true')
-    list_group.add_argument('-r', '--remotes', help='list remote branches in addition to local branches', action='store_true')
+    list_group.add_argument('-l', '--list', help='list local branches', action='store_true')
+    list_group.add_argument('-lr', '--remote', help='list remote branches in addition to local branches', action='store_true')
 
     create_group = branch_parser.add_argument_group('create branches')
     create_group.add_argument( '-c', '--create', nargs='+', help='create branch(es)', dest='create_b',metavar='branch')

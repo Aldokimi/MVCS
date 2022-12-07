@@ -24,7 +24,10 @@ class update():
         # Get all repo data
         repo_name = self.__repo_management.get_repo_config()["name"]
         repo_owner= self.__repo_management.get_owner_data()["username"]
-        response = requests.get(f'http://127.0.0.1:8000/api/repos/data/{repo_owner}/{repo_name}/')
+        headers={
+            "Authorization": f"Bearer {self.__user_mgt.get_user_data()['access_token']}",
+        }
+        response = requests.get(f'http://127.0.0.1:8000/api/v1/repos/data/{repo_owner}/{repo_name}/', headers=headers, )
         if response.status_code != 200:
             raise Exception("Error, requesting repo data failed")
         

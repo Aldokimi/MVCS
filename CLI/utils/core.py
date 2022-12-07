@@ -5,6 +5,9 @@ from miniv import Repository, Commit, Branch, Upload,\
 
 from helper import RepoManagement as RM
 from helper import UserManagement as UM
+from helper import print_helper   as PH
+
+IN_REPO = '.mvcs' in os.listdir(os.getcwd())
 
 def create_repo(args):
     '''
@@ -22,42 +25,63 @@ you can user for this `miniv repo --create name_of_the_new_repo`
         raise Exception(e)
 
 def status(args):
+    if not IN_REPO:
+        PH.err("You are not in a MVCS repo!")
+        return
     try:
         Status.status(args)
     except Exception as e:
         raise Exception(e)
 
 def commits_handler(args):
+    if not IN_REPO:
+        PH.err("You are not in a MVCS repo!")
+        return
     try:
         Commit.commit(args)
     except Exception as e:
         raise Exception(e)
 
 def branches_handler(args):
+    if not IN_REPO:
+        PH.err("You are not in a MVCS repo!")
+        return
     try:
         Branch.branch(args)
     except Exception as e:
         raise Exception(e)
 
 def merge_branches(args):
+    if not IN_REPO:
+        PH.err("You are not in a MVCS repo!")
+        return
     try:
         Merge.merge(args)
     except Exception as e:
         raise Exception(e)
 
 def upload(args):
+    if not IN_REPO:
+        PH.err("You are not in a MVCS repo!")
+        return
     try:
         Upload.upload(args)
     except Exception as e:
         raise Exception(e)
 
 def update(args):
+    if not IN_REPO:
+        PH.err("You are not in a MVCS repo!")
+        return
     try:
         Update.update(args)
     except Exception as e:
         raise Exception(e)
 
 def checkout(args):
+    if not IN_REPO:
+        PH.err("You are not in a MVCS repo!")
+        return
     repo_config_path= os.path.join(os.path.join(os.getcwd()), ".mvcs")
     repo_management = RM.RepoManagement(repo_config_path)
     user_management = UM.UserManagement(repo_config_path)
@@ -69,12 +93,18 @@ def checkout(args):
         raise Exception(e)
 
 def diff(args):
+    if not IN_REPO:
+        PH.err("You are not in a MVCS repo!")
+        return
     try:
         Diff.diff(args)
     except Exception as e:
         raise Exception(e)
 
 def undo(args):
+    if not IN_REPO:
+        PH.err("You are not in a MVCS repo!")
+        return
     repo_config_path= os.path.join(os.path.join(os.getcwd()), ".mvcs")
     repo_management = RM.RepoManagement(repo_config_path)
     user_management = UM.UserManagement(repo_config_path)
