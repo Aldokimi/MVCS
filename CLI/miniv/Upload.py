@@ -6,7 +6,8 @@ from . import Diff
 
 from helper import RepoManagement as RM
 from helper import UserManagement as UM
-from helper import print_helper   as ph
+from helper import print_helper as ph
+
 
 class upload():
     __repo_management, __config_folder, __user_mgt = None, None, None
@@ -43,15 +44,17 @@ class upload():
                 del commit_data["amend"]
 
                 response = self.__apply_commit_on_API(
-                    "put", 
-                    commit_data, 
+                    "put",
+                    commit_data,
                     self.__repo_management.get_latest_commit('main')['id']
                 )
 
                 if response and response.status_code == 200:
                     commit_data = response.json()
-                    commit_id = self.__repo_management.get_latest_commit('main')['id']
-                    self.__repo_management.modify_commit(commit_data, commit_id)
+                    commit_id = self.__repo_management.get_latest_commit('main')[
+                        'id']
+                    self.__repo_management.modify_commit(
+                        commit_data, commit_id)
                 else:
                     raise Exception(
                         'Error, cannot create a put commit request to the API,'
@@ -69,20 +72,22 @@ class upload():
             # Now we need to preform a scp command to upload the commit files from a branch 
             '''
             branch_folder = os.path.join(
-                self.__config_folder, 
-                self.__repo_management.get_branch_data(branch_id=commit_data["branch"])['name']
+                self.__config_folder,
+                self.__repo_management.get_branch_data(
+                    branch_id=commit_data["branch"])['name']
             )
-            
+
             for file in os.listdir(branch_folder):
                 if file.split(".")[0] != initial_commit:
                     try:
                         p = subprocess.run([
-                            'scp', '-r', 
-                            os.path.join(branch_folder, file), 
+                            'scp', '-r',
+                            os.path.join(branch_folder, file),
                             f'{self.__upload_url}'
                         ])
-                        if p.returncode != 0 :
-                            raise Exception("Error, uploading repo data failed!")
+                        if p.returncode != 0:
+                            raise Exception(
+                                "Error, uploading repo data failed!")
                     except subprocess.CalledProcessError as e:
                         print(e)
                         raise Exception("Error, wrong clone URL!")
@@ -93,7 +98,8 @@ class upload():
         ph.ok(" Uploaded changes successfully!")
 
     def __get_last_commit(self, branch=None):
-        branch_name = branch if branch else self.__user_mgt.get_user_data()["current_branch"]
+        branch_name = branch if branch else self.__user_mgt.get_user_data()[
+            "current_branch"]
         _, commit_a = self.__user_mgt.get_last_new_commit(
             self.__repo_management.get_branch_data(branch_name)["id"]
         )
@@ -106,20 +112,23 @@ class upload():
         Create a commit inside the repo_config.json and in the backend
         '''
         API_end_point = 'http://127.0.0.1:8000/api/v1/commits/' if method == 'post'\
-             else 'http://127.0.0.1:8000/api/v1/commits/' + f'{commit_id}/'
-        
-        headers={
+            else 'http://127.0.0.1:8000/api/v1/commits/' + f'{commit_id}/'
+
+        headers = {
             "Authorization": f"Bearer {self.__user_mgt.get_user_data()['access_token']}",
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
-        
+
         response = None
         if method == 'post':
-            response = requests.post(API_end_point, json = commit_data, headers=headers, )
+            response = requests.post(
+                API_end_point, json=commit_data, headers=headers, )
         elif method == 'put':
-            response = requests.put(API_end_point, json = commit_data, headers=headers, )
+            response = requests.put(
+                API_end_point, json=commit_data, headers=headers, )
         else:
-            raise Exception(f'Error, cannot updated the commit, response code {response.status_code}!')
+            raise Exception(
+                f'Error, cannot updated the commit, response code {response.status_code}!')
 
         return response

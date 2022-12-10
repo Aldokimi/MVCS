@@ -10,7 +10,7 @@ from . import Repository
 
 from helper import RepoManagement as RM
 from helper import UserManagement as UM
-from helper import print_helper   as ph
+from helper import print_helper as ph
 
 
 class merge():
@@ -18,7 +18,7 @@ class merge():
     __repo_management, __config_folder, __user_mgt = None, None, None
 
     def __init__(self, args) -> None:
-        self.__branch   = args.branch
+        self.__branch = args.branch
 
         self.__config_folder = os.path.join(os.path.join(os.getcwd()), ".mvcs")
         self.__repo_management = RM.RepoManagement(self.__config_folder)
@@ -27,24 +27,27 @@ class merge():
         if self.__branch:
             self.__branch = str(self.__branch)
             self.__merge_branches()
-    
+
     def __merge_branches(self):
-        diffs, new_files = Diff.diff_repo(self.__config_folder, self.__repo_management, self.__user_mgt)
+        diffs, new_files = Diff.diff_repo(
+            self.__config_folder, self.__repo_management, self.__user_mgt)
         if diffs or len(new_files) != 0:
-            ph.err("Error, you have uncommitted changes, please commit your changes first!")
+            ph.err(
+                "Error, you have uncommitted changes, please commit your changes first!")
             return
 
         if self.__user_mgt.get_user_data()["current_branch"] == self.__branch:
-            ph.err("You cannot merge with the same branch, please choose another branch!")
+            ph.err(
+                "You cannot merge with the same branch, please choose another branch!")
             return
         else:
             # Check how sure is the user!
             ph.warn("Are you sure that you want to merge the current branch "
-                f"<{self.__user_mgt.get_user_data()['current_branch']}> with the content of <{self.__branch}> ? (Y/n)")
-            
+                    f"<{self.__user_mgt.get_user_data()['current_branch']}> with the content of <{self.__branch}> ? (Y/n)")
+
             answer = input("\n\t")
             ph.msg("")
-            if answer == "N" or answer == "n" or answer == "NO" or answer == "No" or answer  == "no":
+            if answer == "N" or answer == "n" or answer == "NO" or answer == "No" or answer == "no":
                 ph.ok(" Merging aborted!")
                 return
             else:
@@ -52,7 +55,7 @@ class merge():
 
             # First we need to decompress the last commit from the specified branch into a test directory (this directory will be called new)
             # Then we need to store the new files in a list and compare them to the current branch's files:
-            #       * The additional files from the new directory will be copied to a new directory 
+            #       * The additional files from the new directory will be copied to a new directory
             #       * The additional files from the current branch will be kept
             # Then we will merge the similar files into the new directory
             # Finally the working directory will be replaced with the new directory
@@ -66,7 +69,8 @@ class merge():
             _, commit_a = self.__user_mgt.get_last_new_commit(
                 self.__repo_management.get_branch_data(branch_name=self.__branch)["id"])
             commit_b = self.__repo_management.get_latest_commit(self.__branch)
-            commit = self.__repo_management.get_largest_commit(commit_a, commit_b)
+            commit = self.__repo_management.get_largest_commit(
+                commit_a, commit_b)
 
             has_commit_a = commit["unique_id"] == commit_a["unique_id"]
 
@@ -82,19 +86,21 @@ class merge():
                     raise Exception(e)
 
             # Store the files of the the merge branch, e.g:
-            merge_branch = [(item.split(os.sep)[1:][0] if has_commit_a else item)\
-                 for item in self.__repo_management.path_to_list(test_dir) if not ".mvcs" in item]
+            merge_branch = [(item.split(os.sep)[1:][0] if has_commit_a else item)
+                            for item in self.__repo_management.path_to_list(test_dir) if not ".mvcs" in item]
 
             # Store the working directory
             working_directory = [item for item in self.__repo_management.path_to_list(
-                    self.__config_folder.split('.mvcs')[0]
-                ) if not ".mvcs" in item]
+                self.__config_folder.split('.mvcs')[0]
+            ) if not ".mvcs" in item]
 
             # Get additional files from the new directory of the merge branch
-            new_files = [item for item in merge_branch if item not in working_directory]
+            new_files = [
+                item for item in merge_branch if item not in working_directory]
 
             # Create the new directory and copy the additional files to the new directory
-            new_directory = os.path.join(self.__config_folder, f"{unique_test_name}_new")
+            new_directory = os.path.join(
+                self.__config_folder, f"{unique_test_name}_new")
             os.mkdir(new_directory, 0o777)
             for new_file in new_files:
                 file_to_move = os.path.join(test_dir, new_file)
@@ -111,12 +117,15 @@ class merge():
 
             # Merge the common files into a new file inside the new directory
             merge_conflict_files = []
-            common_files = [item for item in merge_branch if item not in new_files]
+            common_files = [
+                item for item in merge_branch if item not in new_files]
             for file in common_files:
                 # Merge the old and the new files into one merge file
                 new_file = os.path.join(test_dir, file)
-                old_file = os.path.join(self.__config_folder.split('.mvcs')[0], file)
-                merge_result, has_merge_conflicts = self.merge_files(old_file, new_file)
+                old_file = os.path.join(
+                    self.__config_folder.split('.mvcs')[0], file)
+                merge_result, has_merge_conflicts = self.merge_files(
+                    old_file, new_file)
                 merge_file = os.path.join(new_directory, file)
                 # Get the path list to create new directories if needed
                 new_dir = ""
@@ -140,13 +149,14 @@ class merge():
                     ph.msg(ph.magenta(file_x))
                 ph.msg("Do you want to continue the merge? (Y/n)")
                 answer = input("\n\t")
-                if answer == "N" or answer == "n" or answer == "NO" or answer == "No" or answer  == "no":
+                if answer == "N" or answer == "n" or answer == "NO" or answer == "No" or answer == "no":
                     ph.err(" Merging aborted!")
                     return
 
             # Replace the working directory with the new directory
             self.__repo_management.delete_working_directory()
-            shutil.copytree(new_directory, self.__config_folder.split('.mvcs')[0], dirs_exist_ok=True)
+            shutil.copytree(new_directory, self.__config_folder.split(
+                '.mvcs')[0], dirs_exist_ok=True)
 
             # Delete the new and test directories
             shutil.rmtree(new_directory)
@@ -154,19 +164,19 @@ class merge():
 
             if len(merge_conflict_files) > 0:
                 ph.warn("You have some merge conflicts in files:"
-                    f"\n  ➜  {''.join(merge_conflict_files)}"
-                    ", please resolve them and commit the changes to complete the merge")
+                        f"\n  ➜  {''.join(merge_conflict_files)}"
+                        ", please resolve them and commit the changes to complete the merge")
             else:
                 ph.ok(" Merged the current branch to main successfully!")
-        
+
     def merge_files(self, old_file, new_file):
         try:
             with open(old_file) as old, open(new_file) as new:
                 old_lines = old.readlines()
                 new_lines = new.readlines()
-                
+
                 d = difflib.Differ()
-                diff = d.compare(new_lines , old_lines)
+                diff = d.compare(new_lines, old_lines)
                 # print("\n".join(diff))
 
                 diff_list = list(diff)
@@ -182,11 +192,12 @@ class merge():
                     diff_line = diff_list[i]
                     if diff_line[:2] == "  ":
                         composed_text.append(diff_line[2:])
-                        i+=1
+                        i += 1
                     else:
                         pluses, minuses = [], []
-                        pluses.append(diff_line[2:]) if diff_line[:2] == "+ " else minuses.append(diff_line[2:])
-                        i+=1
+                        pluses.append(
+                            diff_line[2:]) if diff_line[:2] == "+ " else minuses.append(diff_line[2:])
+                        i += 1
 
                         # Check the sequence of changes
                         end_of_loop = False
@@ -205,26 +216,29 @@ class merge():
                                     composed_text += pluses
                                 else:
                                     has_conflicts = True
-                                    composed_text += self.__conflict_text(pluses, minuses)
+                                    composed_text += self.__conflict_text(
+                                        pluses, minuses)
                                 composed_text.append(diff_line[2:])
-                            i+=1
+                            i += 1
 
                         if not end_of_loop:
                             if (len(pluses) == 0 or len(minuses) == 0):
                                 composed_text += pluses
                             else:
                                 has_conflicts = True
-                                composed_text += self.__conflict_text(pluses, minuses)
+                                composed_text += self.__conflict_text(
+                                    pluses, minuses)
                 return (''.join(composed_text), has_conflicts)
-        except Exception as e: 
-            raise Exception("Error, cannot open comparison files: \n{}".format(e))
+        except Exception as e:
+            raise Exception(
+                "Error, cannot open comparison files: \n{}".format(e))
 
     def __conflict_text(self, pluses, minuses):
         composed_text = []
         new_changes_line = "\n>>>>>>>>>>>>>>>>> New changes +++\n"
         composed_text.append(new_changes_line)
         composed_text += pluses
-        middle_line      = "\n================= +++\n"
+        middle_line = "\n================= +++\n"
         composed_text.append(middle_line)
         composed_text += minuses
         old_changes_line = "\n<<<<<<<<<<<<<<<<< Old changes ---\n"

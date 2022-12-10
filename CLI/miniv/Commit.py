@@ -11,18 +11,19 @@ import requests
 
 from helper import RepoManagement as RM
 from helper import UserManagement as UM
-from helper import print_helper   as ph
+from helper import print_helper as ph
+
 
 class commit():
     __list, __info, __commit_message, __amend\
-         = None, None, None, None
+        = None, None, None, None
     __repo_management, __config_folder, __user_mgt = None, None, None
 
     def __init__(self, args) -> None:
-        self.__list   = args.list
-        self.__info   = args.info
+        self.__list = args.list
+        self.__info = args.info
         self.__commit_message = args.create
-        self.__amend  = args.amend
+        self.__amend = args.amend
 
         repo_path = os.path.join(os.getcwd())
         self.__config_folder = os.path.join(repo_path, ".mvcs")
@@ -55,16 +56,16 @@ class commit():
             raise Exception(
                 "Error, couldn't get branch data while renaming the branch!")
         commit = branch_data['commits'][self.__info]
-        info =f"     Info of the commit with ID {self.__info}\n"
+        info = f"     Info of the commit with ID {self.__info}\n"
         for (k, v) in commit.items():
             branch_data = self.__repo_management.get_branch_data(branch_id=v)
             if not branch_data:
                 raise Exception(
                     "Error, couldn't get branch data while renaming the branch!")
             if k == "branch":
-                info+=f"{k}:     {branch_data['name']}\n"
+                info += f"{k}:     {branch_data['name']}\n"
             else:
-                info+=f"{k}:  {v}\n"
+                info += f"{k}:  {v}\n"
         ph.ok(" " + info)
 
     def __create_commit_folder(self):
@@ -87,16 +88,16 @@ class commit():
         xz_file.close()
 
         shutil.copy2(
-            commit_file_name, 
+            commit_file_name,
             os.path.join(
-                self.__config_folder, 
+                self.__config_folder,
                 self.__user_mgt.get_user_data()["current_branch"]
             ))
-            
+
         os.chmod(os.path.join(
-                self.__config_folder, 
-                f'{self.__user_mgt.get_user_data()["current_branch"]}/{commit_file_name}'
-            ), 0o777)
+            self.__config_folder,
+            f'{self.__user_mgt.get_user_data()["current_branch"]}/{commit_file_name}'
+        ), 0o777)
         os.remove(commit_file_name)
 
         return commit_unique_id
@@ -116,7 +117,7 @@ class commit():
         if not branch_data:
             raise Exception(
                 "Error, couldn't get branch data while renaming the branch!")
-                
+
         branch_id = branch_data['id']
         committer = self.__repo_management.get_owner_data()['id']
 
@@ -129,7 +130,8 @@ class commit():
         }
 
         last_new_commit_id = self.__user_mgt.get_last_new_commit()[0]
-        self.__user_mgt.add_new_commit(int(last_new_commit_id) + 1, commit_data)
+        self.__user_mgt.add_new_commit(
+            int(last_new_commit_id) + 1, commit_data)
         ph.ok(" " + "Created commit successfully!")
 
     def __amend_commit(self):
@@ -154,8 +156,9 @@ class commit():
 
         commit_data = {
             "amend": True,
-            "message": new_message if new_message else\
-                self.__user_mgt.get_last_new_commit(branch_data["id"])[1]['message'],
+            "message": new_message if new_message else
+            self.__user_mgt.get_last_new_commit(
+                branch_data["id"])[1]['message'],
             "branch": int(branch_id),
             "committer": int(committer),
             "unique_id": commit_unique_id,
@@ -168,11 +171,13 @@ class commit():
         )[0]
 
         if len(self.__user_mgt.get_user_data()['new_commits']) == 1:
-            self.__user_mgt.add_new_commit(int(last_new_commit_id) + 1, commit_data)
+            self.__user_mgt.add_new_commit(
+                int(last_new_commit_id) + 1, commit_data)
         else:
             self.__user_mgt.modify_new_commit(last_new_commit_id, commit_data)
-        
+
         ph.ok(" Amended commit successfully!")
+
 
 def undo(config_folder, repo_management, user_management):
     if len(user_management.get_user_data()["new_commits"]) == 1:
@@ -182,14 +187,15 @@ def undo(config_folder, repo_management, user_management):
         )
         answer = input("\t\t\t\n")
         if answer == 'Y' or answer == 'y' or answer == 'Yes' or answer == 'yes':
-            ## Remove the last commit remotely
+            # Remove the last commit remotely
             # Delete the commit from the API
             last_commit = repo_management.get_latest_commit(
-                    user_management.get_user_data()["current_branch"]
-                )
-            API_end_point = 'http://127.0.0.1:8000/api/v1/commits/' + f'{last_commit["id"]}/'
-            
-            headers={
+                user_management.get_user_data()["current_branch"]
+            )
+            API_end_point = 'http://127.0.0.1:8000/api/v1/commits/' + \
+                f'{last_commit["id"]}/'
+
+            headers = {
                 "Authorization": f"Bearer {user_management.get_user_data()['access_token']}",
                 "Content-Type": "application/json",
                 "Accept": "application/json"
@@ -202,18 +208,22 @@ def undo(config_folder, repo_management, user_management):
                 "unique_id": last_commit["unique_id"]
             }
 
-            response = requests.delete(API_end_point, json = commit_data, headers=headers, )
+            response = requests.delete(
+                API_end_point, json=commit_data, headers=headers, )
             if response.status_code == 204:
                 # Delete the commit form configuration
-                current_branch = user_management.get_user_data()["current_branch"]
-                repo_management.delete_commit(current_branch, last_commit["id"])
+                current_branch = user_management.get_user_data()[
+                    "current_branch"]
+                repo_management.delete_commit(
+                    current_branch, last_commit["id"])
             else:
-                raise Exception("Error, couldn't delete the commit from the API")
+                raise Exception(
+                    "Error, couldn't delete the commit from the API")
 
             # Update the repository
             update_repository(config_folder, repo_management, user_management)
     else:
-        ## Remove the last commit locally
+        # Remove the last commit locally
         # Delete the commit from the configuration
         branch_data = repo_management.get_branch_data(
             branch_name=user_management.get_user_data()["current_branch"])
@@ -226,20 +236,22 @@ def undo(config_folder, repo_management, user_management):
         user_management.delete_new_commit(internal_id)
         commit_unique_id = commit_data["unique_id"]
         commit_file_name = os.path.join(
-            config_folder, 
-            user_management.get_user_data()["current_branch"] + f"/{commit_unique_id}.tar.xz"
+            config_folder,
+            user_management.get_user_data(
+            )["current_branch"] + f"/{commit_unique_id}.tar.xz"
         )
         os.remove(commit_file_name)
 
         # Update the repository
         update_repository(config_folder, repo_management, user_management)
 
+
 def update_repository(config_folder, repo_management, user_management, last_commit=None):
     # Delete the working directory
     repo_management.delete_working_directory()
     commit_data = None
 
-    # Extract the last commit 
+    # Extract the last commit
     if not last_commit:
         branch_data = repo_management.get_branch_data(
             branch_name=user_management.get_user_data()["current_branch"])
@@ -254,8 +266,9 @@ def update_repository(config_folder, repo_management, user_management, last_comm
 
     commit_unique_id = commit_data["unique_id"]
     commit_file_name = os.path.join(
-        config_folder, 
-        user_management.get_user_data()["current_branch"] + f"/{commit_unique_id}.tar.xz"
+        config_folder,
+        user_management.get_user_data(
+        )["current_branch"] + f"/{commit_unique_id}.tar.xz"
     )
     working_dir = config_folder.split('.mvcs')[0]
     if Repository.repo.is_nonempty_tar_file(commit_file_name):

@@ -23,9 +23,9 @@ class UserManagement():
 
     def login(self):
         response = requests.post(
-            'http://127.0.0.1:8000/api/v1/login/', 
-            json = {
-                "email": f"{self.__user_config['email']}", 
+            'http://127.0.0.1:8000/api/v1/login/',
+            json={
+                "email": f"{self.__user_config['email']}",
                 "password": f"{self.decrypt_password(self.__user_config['password'])}"
             }
         )
@@ -41,26 +41,26 @@ class UserManagement():
     @staticmethod
     def encrypt_password(raw):
         BS = AES.block_size
-        pad = lambda s: s + (BS - len(s) % BS) * chr(BS - len(s) % BS)
+        def pad(s): return s + (BS - len(s) % BS) * chr(BS - len(s) % BS)
         raw = base64.b64encode(pad(raw).encode('utf8'))
         iv = get_random_bytes(AES.block_size)
-        cipher = AES.new(key= UserManagement.__key__, mode= AES.MODE_CFB,iv= iv)
+        cipher = AES.new(key=UserManagement.__key__, mode=AES.MODE_CFB, iv=iv)
         return base64.b64encode(iv + cipher.encrypt(raw))
-    
+
     @staticmethod
     def decrypt_password(enc):
-        unpad = lambda s: s[:-ord(s[-1:])]
+        def unpad(s): return s[:-ord(s[-1:])]
         enc = base64.b64decode(enc)
         iv = enc[:AES.block_size]
         cipher = AES.new(UserManagement.__key__, AES.MODE_CFB, iv)
         return unpad(base64.b64decode(cipher.decrypt(enc[AES.block_size:])).decode('utf8'))
 
     def fix_path(self, path):
-        return str(path.replace('\\','/'))
+        return str(path.replace('\\', '/'))
 
     def check_ssh(self, host, user, port=20):
         sshClient = paramiko.SSHClient()
-        try:    
+        try:
             sshClient.connect(host, user)
             stdin, stdout, stderr = sshClient.exec_command('exit')
             return True
@@ -70,7 +70,7 @@ class UserManagement():
     def add_initial_commit(self, commit):
         try:
             with open(os.path.join(self.__config_folder, 'user_config.json'), 'w') as f:
-                self.__user_config['new_commits'] = { 0 : commit}
+                self.__user_config['new_commits'] = {0: commit}
                 json.dump(self.__user_config, f)
         except:
             raise Exception("Error, cannot open user_config.json")
@@ -97,7 +97,7 @@ class UserManagement():
         if branch_id:
             for commit in self.__user_config['new_commits']:
                 if int(commit) >= commit_internal_id and\
-                     int(self.__user_config['new_commits'][commit]["branch"]) == branch_id:
+                        int(self.__user_config['new_commits'][commit]["branch"]) == branch_id:
                     last_commit = self.__user_config['new_commits'][commit]
                     commit_internal_id = int(commit)
         else:
@@ -124,16 +124,17 @@ class UserManagement():
         for x in new_commits:
             if x != "0":
                 commit_unique_id = new_commits[x]["unique_id"]
-                os.remove(os.path.join(branch_folder, commit_unique_id + ".tar.xz"))
+                os.remove(os.path.join(branch_folder,
+                          commit_unique_id + ".tar.xz"))
             else:
-                initial_commit = {"0" : new_commits[x]}
+                initial_commit = {"0": new_commits[x]}
         try:
             with open(os.path.join(self.__config_folder, 'user_config.json'), 'w') as f:
                 self.__user_config['new_commits'] = initial_commit
                 json.dump(self.__user_config, f)
         except:
             raise Exception("Error, cannot open user_config.json")
-    
+
     def update_current_branch(self, new_branch):
         try:
             with open(os.path.join(self.__config_folder, 'user_config.json'), 'w') as f:
@@ -146,7 +147,7 @@ class UserManagement():
         return self.__user_config['current_branch'] == "main"
 
     def get_branches_commits(self, branch_id):
-        output=[]
+        output = []
         for commit in self.__user_config['new_commits']:
             if commit["branch"] == f"{branch_id}":
                 output.append(commit)

@@ -9,6 +9,7 @@ from django.contrib.auth.models import (
     BaseUserManager, AbstractBaseUser
 )
 
+
 class UserManager(BaseUserManager):
     def create_user(self, username, email, date_of_birth, password=None):
         """
@@ -54,13 +55,17 @@ class User(AbstractBaseUser):
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
     linkedin_token = models.TextField(blank=True, default='')
-    date_joined = models.DateTimeField(verbose_name="date joined", default=timezone.now, null=True)
-    last_login  = models.DateTimeField(verbose_name="last login", default=timezone.now, null=True)
+    date_joined = models.DateTimeField(
+        verbose_name="date joined", default=timezone.now, null=True)
+    last_login = models.DateTimeField(
+        verbose_name="last login", default=timezone.now, null=True)
     first_name = models.CharField(max_length=60, null=True)
     last_name = models.CharField(max_length=60, null=True)
     bio = models.TextField(blank=True, null=True, max_length=2000)
-    date_of_birth = models.DateTimeField(verbose_name="date of birth", null=True)
-    profile_picture = models.ImageField(upload_to="image", blank=True, null=True)
+    date_of_birth = models.DateTimeField(
+        verbose_name="date of birth", null=True)
+    profile_picture = models.ImageField(
+        upload_to="image", blank=True, null=True)
     public_key = models.TextField(blank=True, default='')
     objects = UserManager()
 
@@ -85,22 +90,29 @@ class User(AbstractBaseUser):
 
         return bool(self.linkedin_token) and self.expiry_date > timezone.now()
 
+
 class Repository(models.Model):
     name = models.CharField(max_length=500)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
-    date_created = models.DateTimeField(verbose_name="date created", default=timezone.now)
-    last_updated = models.DateTimeField(verbose_name="date joined", default=timezone.now)
-    contributors = models.ManyToManyField(User, null=True, related_name='repo_contributors')
+    date_created = models.DateTimeField(
+        verbose_name="date created", default=timezone.now)
+    last_updated = models.DateTimeField(
+        verbose_name="date joined", default=timezone.now)
+    contributors = models.ManyToManyField(
+        User, null=True, related_name='repo_contributors')
     private = models.BooleanField(default=False)
     clone_url = models.CharField(max_length=500, null=True)
     description = models.TextField(blank=True, null=True, max_length=2000)
 
+
 class Branch(models.Model):
     repo = models.ForeignKey(Repository, on_delete=models.CASCADE)
     name = models.CharField(max_length=500)
-    date_created = models.DateTimeField(verbose_name="date created", default=timezone.now)
+    date_created = models.DateTimeField(
+        verbose_name="date created", default=timezone.now)
     has_locked_files = models.BooleanField(default=False)
     locked = models.BooleanField(default=False)
+
 
 class Commit(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
@@ -109,4 +121,3 @@ class Commit(models.Model):
     date_updated = models.DateTimeField(default=timezone.now)
     message = models.TextField(max_length=1500)
     unique_id = models.CharField(max_length=64, unique=True)
-

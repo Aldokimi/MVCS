@@ -18,13 +18,15 @@ NOT_IN_REPO = 4
 
 def build_parser(subcommands):
     parser = argparse.ArgumentParser(
-        description=('MVCS: a simple version control system used for small project and in small teams.'),
+        description=(
+            'MVCS: a simple version control system used for small project and in small teams.'),
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
     if sys.version_info[0] < 3:
         parser.register('action', 'parsers', helpers.AliasedSubParsersAction)
 
-    parser.add_argument('--version', action='version', version=('MiniGit Version: {0}\n'.format(__version__)))
+    parser.add_argument('--version', action='version',
+                        version=('MiniGit Version: {0}\n'.format(__version__)))
     subparsers = parser.add_subparsers(title='subcommands', dest='subcmd_name')
     subparsers.required = True
 
@@ -33,21 +35,25 @@ def build_parser(subcommands):
 
     return parser
 
+
 def setup_windows_console():
     if sys.platform == 'win32':
         import ctypes
         kernel32 = ctypes.windll.kernel32
         kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
+
 def print_help(parser):
     print(parser.description)
     print('\ncommands:\n')
 
-    subparsers_actions = [ action for action in parser._actions if isinstance(action, argparse._SubParsersAction)]
+    subparsers_actions = [action for action in parser._actions if isinstance(
+        action, argparse._SubParsersAction)]
 
     for subparsers_action in subparsers_actions:
         for choice in subparsers_action._choices_actions:
             print('    {:<19} {}'.format(choice.dest, choice.help))
+
 
 def main():
 
@@ -94,7 +100,7 @@ def main():
             'include the following information:\n\n{1}\n'.format(
                 __version__, traceback.format_exc()))
         return INTERNAL_ERROR
-  
+
 
 if __name__ == "__main__":
     main()
