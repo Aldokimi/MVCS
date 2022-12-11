@@ -24,26 +24,26 @@ class repo():
             Create the repo directory and a .mvcs file in the base dir
             '''
             # get the repo name and the repo path
-            repo_name = self.__create_request if self.__create_request else self.__clone_url.split(
+            self.__repo_name = self.__create_request if self.__create_request else self.__clone_url.split(
                 '@')[1].rsplit('/', 2)[-2:][1]
-            repo_path = os.path.join(os.getcwd(), repo_name)
+            self.__repo_path = os.path.join(os.getcwd(), self.__repo_name)
 
             # check if the repository is already cloned or there is directory with the same name
-            if not os.path.exists(repo_path):
-                os.mkdir(repo_path, 0o755)
+            if not os.path.exists(self.__repo_path):
+                os.mkdir(self.__repo_path, 0o755)
             else:
                 ph.err(
-                    f"Error, there is already a directory with the same name <{repo_name}>!")
+                    f"Error, there is already a directory with the same name <{self.__repo_name}>!")
                 return
 
             # create the config folder path
-            self.__config_folder = os.path.join(repo_path, ".mvcs")
+            self.__config_folder = os.path.join(self.__repo_path, ".mvcs")
 
             if not os.path.exists(self.__config_folder):
                 os.mkdir(self.__config_folder, 0o755)
             else:
-                if not os.path.exists(repo_path):
-                    shutil.rmtree(repo_path)
+                if not os.path.exists(self.__repo_path):
+                    shutil.rmtree(self.__repo_path)
                 ph.err(
                     "Error, there already exists a config directory (you are already in a repository)!")
                 return
@@ -54,13 +54,10 @@ class repo():
         if self.__clone_url:
             try:
                 self.clone()
-                user = self.__clone_url.split('@')[0]
-                if self.__UM.check_ssh(host=user, user=user):
-                    ph.err("Error, wrong clone URL, please try check your URL again!")
             except Exception as e:
-                if os.path.exists(repo_path):
-                    shutil.rmtree(repo_path)
-                    print(e)
+                if os.path.exists(self.__repo_path):
+                    shutil.rmtree(self.__repo_path)
+                raise Exception(e)
 
         elif self.__create_request:
             self.create()
@@ -133,15 +130,25 @@ class repo():
         decompress the commit folder into the working directory.
         '''
         host = self.__clone_url.split('@')[1]
-        repo_name = host.rsplit('/', 2)[-2:][1]
+        self.__repo_name = host.rsplit('/', 2)[-2:][1]
         repo_owner = host.rsplit('/', 2)[-2:][0]
         host = host.rsplit(':', 1)[0]
 
         # Login user
         user_data = self.login()
-        # print(user_data)
         self.create_user_configuration(user_data)
         self.__UM = UM.UserManagement(self.__config_folder)
+
+        # Check the ability to do SSH connection
+        user = self.__clone_url.split('@')[0]
+        print(user + '@' + host)
+        if not self.__UM.check_ssh(host=host, user=user):
+            ph.err(
+                "You are not SSH authorized to clone this repo, "
+                "please make sure to upload your public key to the MVCShub!")
+            if not os.path.exists(self.__repo_path):
+                shutil.rmtree(self.__repo_path)
+            return
 
         # Creating repo_config.json
         headers = {
@@ -154,7 +161,7 @@ class repo():
             try:
                 with open(repo_config_file, 'w+') as f:
                     response = requests.get(
-                        f'http://127.0.0.1:8000/api/v1/repos/data/{repo_owner}/{repo_name}/', headers=headers)
+                        f'http://127.0.0.1:8000/api/v1/repos/data/{repo_owner}/{self.__repo_name}/', headers=headers)
                     if response.status_code != 200:
                         raise Exception(
                             "Error, requesting repo data failed, please check your clone URL and try again")

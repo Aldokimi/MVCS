@@ -60,12 +60,12 @@ class UserManagement():
 
     def check_ssh(self, host, user, port=20):
         sshClient = paramiko.SSHClient()
+        sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
-            sshClient.connect(host, user)
+            sshClient.connect(hostname=host, username=user)
             stdin, stdout, stderr = sshClient.exec_command('exit')
             return True
-        except:
-            return False
+        except: return False
 
     def add_initial_commit(self, commit):
         try:
@@ -120,14 +120,7 @@ class UserManagement():
 
     def reset_new_commits(self, branch_folder):
         new_commits = self.get_user_data()["new_commits"]
-        initial_commit = None
-        for x in new_commits:
-            if x != "0":
-                commit_unique_id = new_commits[x]["unique_id"]
-                os.remove(os.path.join(branch_folder,
-                          commit_unique_id + ".tar.xz"))
-            else:
-                initial_commit = {"0": new_commits[x]}
+        initial_commit = {"0": new_commits[0]}
         try:
             with open(os.path.join(self.__config_folder, 'user_config.json'), 'w') as f:
                 self.__user_config['new_commits'] = initial_commit

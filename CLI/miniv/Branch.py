@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import tarfile
@@ -83,6 +84,18 @@ class branch():
         return commit
 
     def __create_branch(self):
+        # Create branch through the API
+        branch_data = self.__operate_branch_on_API(
+            'post', branch_name=self.__create)
+
+        # Create branch in the repo_config.json and in the API
+        if branch_data.status_code == 201:
+            self.__repo_management.create_branch(branch_data.json())
+        else:
+            response = json.loads(branch_data.text)
+            ph.err(f'Error, in the API side {response["Error"]}')
+            return
+            
         # Create the new branch folder
         new_branch_folder = os.path.join(self.__config_folder, self.__create)
         try:
@@ -107,16 +120,6 @@ class branch():
 
         # Update the value of the current branch in the
         self.__user_mgt.update_current_branch(self.__create)
-
-        # Create branch through the API
-        branch_data = self.__operate_branch_on_API(
-            'post', branch_name=self.__create)
-
-        # Create branch in the repo_config.json and in the API
-        if branch_data.status_code == 201:
-            self.__repo_management.create_branch(branch_data.json())
-        else:
-            raise Exception('Error, cannot create a branch in the API side!')
 
         ph.ok(" " + "Created branch successfully!")
 
@@ -215,6 +218,17 @@ class branch():
         return response
 
 
+def get_last_commit(repo_management, user_management, branch=None):
+    branch_name = branch if branch else user_management.get_user_data()[
+        "current_branch"]
+    _, commit_a = user_management.get_last_new_commit(
+        repo_management.get_branch_data(branch_name)["id"]
+    )
+    commit_b = repo_management.get_latest_commit(branch_name)
+    commit = repo_management.get_largest_commit(commit_a, commit_b)
+    return commit
+
+
 def checkOut(branch_name, config_folder, repo_management, user_management):
     if not branch_name:
         raise Exception("Error, branch name is not passed!")
@@ -228,8 +242,7 @@ def checkOut(branch_name, config_folder, repo_management, user_management):
         # Trying to get the branch, so if the branch doesn't exists and exception will be raised here
         branch_data = repo_management.get_branch_data(branch_name=branch_name)
         if not branch_data:
-            raise Exception(
-                "Error, couldn't get branch data while renaming the branch!")
+            raise Exception("Error, couldn't get branch data!")
 
         # Check if we have un committed changes on the current directory
         diffs, new_files = Diff.diff_repo(
@@ -243,39 +256,24 @@ def checkOut(branch_name, config_folder, repo_management, user_management):
         repo_management.delete_working_directory()
         user_management.update_current_branch(branch_name)
 
-        # Move the files from the last commit ot the working directory
-        branch_commits = branch_data["commits"]
-        if len(branch_commits) != 0:
-            last_commit_id = repo_management.get_latest_commit(branch_name)[
-                "unique_id"]
+        # Get the last commit to move the files from the last commit ot the working directory
+        last_commit = get_last_commit(
+            repo_management, user_management, branch=branch_name)
+        last_commit_unique_id = last_commit["unique_id"]
 
-            branch_data = repo_management.get_branch_data(
-                branch_name=user_management.get_user_data()["current_branch"])
-            if not branch_data:
-                return
-            branch_id = branch_data["id"]
+        branch_folder = os.path.join(config_folder, branch_name)
+        commit_folder = os.path.join(
+            branch_folder, f'{last_commit_unique_id}.tar.xz')
+        working_dir = config_folder.split('.mvcs')[0]
 
-            last_commit_id, last_commit = user_management.get_last_new_commit(
-                branch_id)
-            if last_commit_id == 0:
-                last_commit_id = repo_management.get_latest_commit(
-                    user_management.get_user_data()["current_branch"])["unique_id"]
-            else:
-                last_commit_id = last_commit["unique_id"]
-
-            branch_folder = os.path.join(
-                config_folder, user_management.get_user_data()["current_branch"])
-            commit_folder = os.path.join(
-                branch_folder, f'{last_commit_id}.tar.xz')
-            working_dir = config_folder.split('.mvcs')[0]
-
-            # Extract the last commit file on main into the working directory
-            if Repository.repo.is_nonempty_tar_file(commit_folder):
-                try:
-                    with tarfile.open(commit_folder) as ccf:
-                        ccf.extractall(working_dir)
-                except Exception as e:
-                    raise Exception(e)
+        print(commit_folder)
+        # Extract the last commit file on main into the working directory
+        if Repository.repo.is_nonempty_tar_file(commit_folder):
+            try:
+                with tarfile.open(commit_folder) as ccf:
+                    ccf.extractall(working_dir)
+            except Exception as e:
+                raise Exception(e)
 
         ph.ok(f" Checked out to {branch_name}!")
     except Exception as e:
