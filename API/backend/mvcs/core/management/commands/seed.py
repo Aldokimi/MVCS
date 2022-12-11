@@ -19,6 +19,7 @@ NUM_OF_FAKE_REPOSITORIES = 10
 NUM_OF_FAKE_BRANCHES = 20
 NUM_OF_FAKE_COMMITS = 50
 
+
 class Command(BaseCommand):
     def __init__(self) -> None:
         warnings.filterwarnings("ignore")
@@ -51,7 +52,8 @@ class Command(BaseCommand):
             os.mkdir(path)
             os.system(f"chown -R mvcs:mvcs {path}")
             people.append(person)
-        self.stdout.write(self.style.SUCCESS('Successfully seeded fake USERS into the database'))
+        self.stdout.write(self.style.SUCCESS(
+            'Successfully seeded fake USERS into the database'))
 
         # Create repositories and add users to them
         repos = []
@@ -60,11 +62,12 @@ class Command(BaseCommand):
             contr = random.choice(people)
             repo = RepositoryFactory(owner=owner)
             print(repo)
-            path = os.path.join("/home/mvcs/" + repo.owner.username + '/', repo.name)
+            path = os.path.join(
+                "/home/mvcs/" + repo.owner.username + '/', repo.name)
             os.mkdir(path)
             os.system(f"chown -R mvcs:mvcs {path}")
-            
-            ## Create a new branch called main which have a commit inside it
+
+            # Create a new branch called main which have a commit inside it
             # Create the main branch
             branch_request_data = {
                 "repo": repo.id,
@@ -75,7 +78,7 @@ class Command(BaseCommand):
             if branch_data.is_valid():
                 branch_data.save()
                 path_to_branch = os.path.join(
-                    "/home/mvcs/" + repo.owner.username + '/' + repo.name, 
+                    "/home/mvcs/" + repo.owner.username + '/' + repo.name,
                     branch_data.validated_data['name'])
                 os.mkdir(path_to_branch)
                 os.system(f"chown -R mvcs:mvcs {path_to_branch}")
@@ -93,7 +96,7 @@ class Command(BaseCommand):
             # Create the first commit in the main branch
             commit_request_data = {
                 "message": 'Initial commit',
-                "branch" : branch.id,
+                "branch": branch.id,
                 "committer": repo.owner.id,
                 "unique_id": uuid.uuid4().hex
             }
@@ -103,7 +106,8 @@ class Command(BaseCommand):
                 commit_data.save()
             else:
                 os.rmdir(path)
-                raise Exception("Couldn't create initial commit in the main branch in repo!")
+                raise Exception(
+                    "Couldn't create initial commit in the main branch in repo!")
 
             # Create the compressed folder of the initial commit
             base_path = "/home/mvcs/" + repo.owner.username + '/' + repo.name + '/' + 'main'
@@ -115,10 +119,12 @@ class Command(BaseCommand):
                     tar_xz_file.add(os.path.join(base_path, file))
             xz_file.close()
             shutil.copy2(commit_file_name, base_path)
-            os.system(f"chown -R mvcs:mvcs {os.path.join(base_path, commit_file_name)}")
+            os.system(
+                f"chown -R mvcs:mvcs {os.path.join(base_path, commit_file_name)}")
             os.remove(commit_file_name)
             repos.append(repo)
-        self.stdout.write(self.style.SUCCESS('Successfully seeded fake REPOSITORIES into the database'))
+        self.stdout.write(self.style.SUCCESS(
+            'Successfully seeded fake REPOSITORIES into the database'))
 
         # Create branches and add repos to them
         branches = []
@@ -126,7 +132,7 @@ class Command(BaseCommand):
             repo = random.choice(repos)
             branch = BranchFactory(repo=repo)
             path = os.path.join(
-                "/home/mvcs/" + repo.owner.username + '/' + repo.name, 
+                "/home/mvcs/" + repo.owner.username + '/' + repo.name,
                 branch.name)
             os.mkdir(path)
             os.system(f"chown -R mvcs:mvcs {path}")
@@ -139,21 +145,26 @@ class Command(BaseCommand):
 
             # Copy the last commit from the main branch
             base_path = "/home/mvcs/" +\
-                 repo.owner.username + '/' + repo.name + '/' + branch.name
+                repo.owner.username + '/' + repo.name + '/' + branch.name
             main_branch_dir = "/home/mvcs/" +\
-                 repo.owner.username + '/' + repo.name + '/' + "main"
+                repo.owner.username + '/' + repo.name + '/' + "main"
             commit_file_name = f'{last_commit.unique_id}.tar.xz'
 
-            shutil.copy(os.path.join(main_branch_dir, commit_file_name), base_path)
-            os.system(f"chown -R mvcs:mvcs {os.path.join(base_path, commit_file_name)}")
+            shutil.copy(os.path.join(main_branch_dir,
+                        commit_file_name), base_path)
+            os.system(
+                f"chown -R mvcs:mvcs {os.path.join(base_path, commit_file_name)}")
             branches.append(branch)
-        self.stdout.write(self.style.SUCCESS('Successfully seeded fake BRANCHES into the database'))
-        
+        self.stdout.write(self.style.SUCCESS(
+            'Successfully seeded fake BRANCHES into the database'))
+
         # Create branches and add repos to them
         for _ in range(NUM_OF_FAKE_COMMITS):
             branch = random.choice(branches)
             committer = random.choice(people)
             CommitFactory(branch=branch, committer=committer)
-        self.stdout.write(self.style.SUCCESS('Successfully seeded fake COMMITS into the database'))
-        
-        self.stdout.write(self.style.SUCCESS('\nSEEDING IS DONE SUCCESSFULLY\n'))
+        self.stdout.write(self.style.SUCCESS(
+            'Successfully seeded fake COMMITS into the database'))
+
+        self.stdout.write(self.style.SUCCESS(
+            '\nSEEDING IS DONE SUCCESSFULLY\n'))

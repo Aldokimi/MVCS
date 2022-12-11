@@ -3,7 +3,8 @@ from . import Diff
 
 from helper import RepoManagement as RM
 from helper import UserManagement as UM
-from helper import print_helper   as ph
+from helper import print_helper as ph
+
 
 class status():
     __repo_management, __config_folder, __user_mgt = None, None, None
@@ -17,17 +18,15 @@ class status():
             self.__config_folder, self.__repo_management, self.__user_mgt)
         if not diff and len(new_files) == 0:
             ph.ok(" Nothing is changed!")
-
-        if diff:
+        else:
             ph.warn(" You have the following changes :")
-            print("")
-            ph.msg(ph.yellow("Changed files: "))
-            for changed_file in diff.keys():
-                print("  ➜ ", changed_file)
-        
-        if new_files:
-            ph.warn(" You have the following changes :")
-            print("")
-            ph.msg(ph.red("New files: "))
-            for file in new_files:
-                print("  ➜ ", file)
+            if diff:
+                print("")
+                ph.msg(ph.yellow("Changed files: "))
+                for changed_file in diff.keys():
+                    print("  ➜ ", changed_file)
+            if new_files:
+                print("")
+                ph.msg(ph.red("New files: "))
+                for file in new_files:
+                    print("  ➜ ", file)
