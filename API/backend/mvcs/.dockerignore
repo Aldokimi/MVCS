@@ -1,0 +1,5 @@
+/venv
+/backend/mvcs/core/migrations
+.env
+*.py[cod]
+__pycache__

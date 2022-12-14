@@ -1,0 +1,23 @@
+version: '1'
+
+services:
+  db:
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_USER=mvcs
+      - MYSQL_PASSWORD=testpassword
+      - MYSQL_DATABASE=mvcs
+  api:
+    build: .
+    command: | 
+      bash -c "python3 check_db.py --service-name mysql --ip db --port 3306 &&
+      python3 manage.py makemigrations &&
+      python3 manage.py migrate &&
+      python3 manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db

@@ -98,18 +98,33 @@ WSGI_APPLICATION = 'mvcs.wsgi.application'
 # Database / mysql + mysql-client
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',  
+#         'NAME': 'mvcs',  
+#         'USER': 'root',  
+#         'PASSWORD': 'password',
+#         # 'HOST': '127.0.0.1',
+#         'HOST': 'db', 
+#         'PORT': '3306',
+#         'OPTIONS': {  
+#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"  
+#             }
+#         }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',  
-        'NAME': 'mvcs',  
-        'USER': 'root',  
-        'PASSWORD': 'password',  
-        'HOST': '127.0.0.1',  
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'mvcs',
+        'USER': 'mvcs',
+        'PASSWORD': 'testpassword',
+        'HOST': 'db',
         'PORT': '3306',
         'OPTIONS': {  
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"  
-            }
         }
+    }
 }
 
 
