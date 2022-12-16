@@ -41,7 +41,9 @@ class RegistrationView(APIView):
                 "/home/mvcs/", serializer.validated_data['username'] + '/')
             os.mkdir(path)
             os.system(f"chown -R mvcs:mvcs {path}")
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(
+                {'msg': 'Registered Successfully', **serializer.data}, 
+                    status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -65,7 +67,7 @@ class LoginView(APIView):
 
 
 class LogoutView(APIView):
-    def post(self, request):
+    def get(self, request):
         logout(request)
         return Response({'msg': 'Successfully Logged out'}, status=status.HTTP_200_OK)
 
@@ -79,7 +81,10 @@ class ChangePasswordView(APIView):
         serializer.is_valid(raise_exception=True)
         request.user.set_password(serializer.validated_data['new_password'])
         request.user.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {'msg': 'Successfully changed the password'},
+            status=status.HTTP_200_OK
+        )
 
 
 """
@@ -154,7 +159,7 @@ class UserDetail(APIView):
                     # Add this public key to the end of the authorized_keys file
                     with open("/home/mvcs/.ssh/authorized_keys", "a") as myfile:
                         myfile.write(
-                            "\n" + serializer.validated_data['test.txt'])
+                            "\n" + serializer.validated_data['public_key'])
             except:
                 pass
             return Response(serializer.data)
@@ -228,7 +233,6 @@ class UserCommits(APIView):
         user = self.get_object(pk)
         data = get_user_commits(user.id)
         return Response(data)
-
 
 
 """
@@ -379,7 +383,10 @@ class RepositoryDetail(APIView):
         notAllowedValues = ["id", "date_created", "owner"]
         for k in request.data:
             if k in notAllowedValues:
-                return Response({"Error": "You cannot modify this field!"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"Error": "You cannot modify this field!"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         ser = self.get_serializer_class()
         serializer = ser(repository, data=request.data)
@@ -412,8 +419,11 @@ class RepositoryDetail(APIView):
 
 
 class RepositoryDataDetail(APIView):
-    """
-    Get all the repository data.
+    """Get all data from the repository, this data contains the repository owner data,
+    every branch inside the repository with its data, and every commit inside every branch
+    with its data. 
+
+    This can be used as a configuration data for the CLI application.
     """
 
     def __get_user(self, name):
