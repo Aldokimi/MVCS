@@ -38,7 +38,9 @@ class RepositoryList(APIView):
 
     def get_clone_url(self, username, repo_name):
         ip = ni.ifaddresses('eth0')[AF_INET][0]['addr']
-        return f'mvcs@{ip}:~/{username}/{repo_name}'
+        container_running = True
+        return f'mvcs@{ip}:~/{username}/{repo_name}' if not container_running\
+             else f'mvcs@localhost:~/{username}/{repo_name}'
 
     def get_serializer_class(self):
         if self.request.method == "POST":

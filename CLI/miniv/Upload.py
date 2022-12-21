@@ -88,7 +88,7 @@ class upload():
                     branch_folder, f'{commit["unique_id"]}.tar.xz')
                 try:
                     p = subprocess.run([
-                        'scp', '-p', '8008', commit_file,
+                        'scp', '-P', '8008', commit_file,
                         f'{self.__upload_url}/{branch_name}/'
                     ])
                     if p.returncode != 0:
