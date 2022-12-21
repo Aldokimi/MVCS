@@ -11,6 +11,7 @@ from ..utils import get_tokens_for_user
 
 from django.contrib.auth import authenticate, login, logout
 
+
 class RegistrationView(APIView):
     def post(self, request):
         serializer = RegistrationSerializer(data=request.data)
@@ -21,8 +22,8 @@ class RegistrationView(APIView):
             os.mkdir(path)
             os.system(f"chown -R mvcs:mvcs {path}")
             return Response(
-                {'msg': 'Registered Successfully', **serializer.data}, 
-                    status=status.HTTP_201_CREATED)
+                {'msg': 'Registered Successfully', **serializer.data},
+                status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

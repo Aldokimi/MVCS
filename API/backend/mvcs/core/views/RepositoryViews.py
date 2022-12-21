@@ -18,6 +18,7 @@ from ..utils import get_repo_details
 
 from django.http import Http404
 
+
 class RepositoryList(APIView):
     """
     List all repositories, or create a new repository.
@@ -48,27 +49,47 @@ class RepositoryList(APIView):
     def get(self, request, format=None):
         repositories = Repository.objects.all()
         serializer = CreateRepositorySerializer(repositories, many=True)
-        return Response(serializer.data)
+        data = []
+
+        for repository in serializer.data:
+            if not repository["private"]:
+                data.append(repository)
+            else:
+                if self.request.user.id == repository["owner"] or len(
+                    [x for x in repository["contributors"] if x ==
+                     self.request.user.id]
+                ) != 0:
+                    data.append(repository)
+
+        return Response(data)
 
     def post(self, request, format=None):
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
-        serializer = self.get_serializer_class()
-        # get the clone URL
-        username = self.get_user(request.data["owner"]).username
-        print(username, request.data["name"])
-        request.data["clone_url"] = self.get_clone_url(
-            username, request.data["name"])
 
+        serializer = self.get_serializer_class()
         repositories = serializer(data=request.data)
+
         if repositories.is_valid():
+            repository = repositories.validated_data
+            print(self.request.user.id, repository["owner"].id)
+            if self.request.user.id != repository["owner"].id:
+                raise PermissionDenied()
+
+            # get the clone URL
+            username = self.get_user(request.data["owner"]).username
+            request.data["clone_url"] = self.get_clone_url(
+                username, request.data["name"])
             repositories.save()
             # Create a new director for the repository under the user's directory
             repo = self.get_object(repositories.data['id'])
             path = os.path.join(
                 "/home/mvcs/" + repo.owner.username + '/', repositories.validated_data['name'])
-            os.mkdir(path)
-            os.system(f"chown -R mvcs:mvcs {path}")
+            try:
+                os.mkdir(path)
+                os.system(f"chown -R mvcs:mvcs {path}")
+            except:
+                pass
 
             # Create a new branch called main which have a commit inside it
             # Create the main branch
@@ -83,11 +104,17 @@ class RepositoryList(APIView):
                 path_to_branch = os.path.join(
                     "/home/mvcs/" + repo.owner.username + '/' + repo.name,
                     branch_data.validated_data['name'])
-                os.mkdir(path_to_branch)
-                os.system(f"chown -R mvcs:mvcs {path_to_branch}")
+                try:
+                    os.mkdir(path_to_branch)
+                    os.system(f"chown -R mvcs:mvcs {path_to_branch}")
+                except:
+                    pass
             else:
-                os.rmdir(path)
-                os.system(f"chown -R mvcs:mvcs {path}")
+                try:
+                    os.rmdir(path)
+                    os.system(f"chown -R mvcs:mvcs {path}")
+                except:
+                    pass
                 return Response(branch_data.errors, status=status.HTTP_400_BAD_REQUEST)
 
             try:
@@ -108,7 +135,10 @@ class RepositoryList(APIView):
             if commit_data.is_valid():
                 commit_data.save()
             else:
-                os.rmdir(path)
+                try:
+                    os.rmdir(path)
+                except:
+                    pass
                 return Response(commit_data.errors, status=status.HTTP_400_BAD_REQUEST)
 
             # Create the compressed folder of the initial commit
@@ -120,10 +150,13 @@ class RepositoryList(APIView):
                 for file in os.listdir(base_path):
                     tar_xz_file.add(os.path.join(base_path, file))
             xz_file.close()
-            shutil.copy2(commit_file_name, base_path)
-            os.system(
-                f"chown -R mvcs:mvcs {os.path.join(base_path, commit_file_name)}")
-            os.remove(commit_file_name)
+            try:
+                shutil.copy2(commit_file_name, base_path)
+                os.system(
+                    f"chown -R mvcs:mvcs {os.path.join(base_path, commit_file_name)}")
+                os.remove(commit_file_name)
+            except:
+                pass
 
             return Response(repositories.data, status=status.HTTP_201_CREATED)
         return Response(repositories.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -148,6 +181,11 @@ class RepositoryDetail(APIView):
 
     def get(self, request, pk, format=None):
         repository = self.get_object(pk)
+        if repository.private and not (
+            self.request.user.id == repository.owner.id or len(
+                [x for x in repository.contributors.all() if x.id == self.request.user.id]) != 0
+        ):
+            raise PermissionDenied()
         serializer = CreateRepositorySerializer(repository)
         return Response(serializer.data)
 
@@ -155,14 +193,20 @@ class RepositoryDetail(APIView):
         repository = self.get_object(pk)
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
+
         if repository.owner.id is not self.request.user.id:
+            if len([x for x in repository.contributors.all() if x.id == self.request.user.id]) == 0:
+                raise PermissionDenied()
+
+        if repository.private and not (self.request.user.id == repository.owner.id or len(
+                [x for x in repository.contributors.all() if x.id == self.request.user.id]) != 0):
             raise PermissionDenied()
 
         notAllowedValues = ["id", "date_created", "owner"]
         for k in request.data:
             if k in notAllowedValues:
                 return Response(
-                    {"Error": "You cannot modify this field!"}, 
+                    {"Error": "You cannot modify this field!"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -190,8 +234,11 @@ class RepositoryDetail(APIView):
         if repository.owner.id is not self.request.user.id:
             raise PermissionDenied()
         # Deleting the directory
-        shutil.rmtree('/home/mvcs/' + repository.owner.username +
-                      '/' + repository.name + '/')
+        try:
+            shutil.rmtree('/home/mvcs/' + repository.owner.username +
+                          '/' + repository.name + '/')
+        except:
+            pass
         repository.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -221,8 +268,13 @@ class RepositoryDataDetail(APIView):
             raise NotAuthenticated()
         owner_user = self.__get_user(owner)
         repo = self.__get_object(name, owner_user)
-        print(owner_user, repo)
-        print(repo.name, repo.id)
+        if (repo.owner.id is not self.request.user.id):
+            if len(
+                    [x for x in repo.contributors.all() if x.id == self.request.user.id]) == 0:
+                raise PermissionDenied()
+
+        if repo.private and not (self.request.user.id == repo.owner.id or len(
+                [x for x in repo.contributors.all() if x.id == self.request.user.id]) != 0):
+            raise PermissionDenied()
         data = get_repo_details(repo.id, owner_user.id)
         return Response(data)
-

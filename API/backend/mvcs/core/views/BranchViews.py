@@ -18,15 +18,9 @@ class BranchList(APIView):
     List all branches, or create a new branch.
     """
 
-    def get_branch_object(self, pk):
-        try:
-            return Branch.objects.filter(repo=pk)
-        except Repository.DoesNotExist:
-            raise Http404
-
     def get_repo_object(self, pk):
         try:
-            return Repository.objects.filter(repo=pk)
+            return Repository.objects.get(pk=pk)
         except Repository.DoesNotExist:
             raise Http404
 
@@ -39,7 +33,20 @@ class BranchList(APIView):
     def get(self, request, format=None):
         branches = Branch.objects.all()
         serializer = CreateBranchSerializer(branches, many=True)
-        return Response(serializer.data)
+        data = []
+        for branch in serializer.data:
+            repo_id = branch["repo"]
+            repository = self.get_repo_object(repo_id)
+            if not repository.private:
+                data.append(branch)
+            else:
+                if self.request.user.id == repository.owner or len(
+                    [x for x in repository.contributors.all() if x.id ==
+                     self.request.user.id]
+                ) != 0:
+                    data.append(branch)
+
+        return Response(data)
 
     def post(self, request, format=None):
         serializer = self.get_serializer_class()
@@ -47,11 +54,17 @@ class BranchList(APIView):
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
 
-        # if request.data['repo'] and self.get_repo_object(request.data['repo']).owner.id is not self.request.user.id and\
-        #     self.request.user.id not in [user.id for user in self.get_repo_object(request.data['repo']).contributors.all()]:
-        #     raise PermissionDenied()
-
         if branch.is_valid():
+            repo_id = branch.validated_data["repo"].id
+            repo = self.get_repo_object(repo_id)
+            if (repo.owner.id is not self.request.user.id):
+                if len([x for x in repo.contributors.all() if x.id == self.request.user.id]) == 0:
+                    raise PermissionDenied()
+
+            if repo.private and not (self.request.user.id == repo.owner.id or len(
+                    [x for x in repo.contributors.all() if x.id == self.request.user.id]) != 0):
+                raise PermissionDenied()
+
             # Check if we have a branch with the same name in the belonging repository
             for x in get_repo_branches(branch.validated_data["repo"]):
                 if x.name == branch.validated_data["name"]:
@@ -65,9 +78,11 @@ class BranchList(APIView):
             path = os.path.join(
                 "/home/mvcs/" + repo.owner.username + '/' + repo.name,
                 branch.validated_data['name'])
-            os.mkdir(path)
-            os.system(f"chown -R mvcs:mvcs {path}")
-
+            try:
+                os.mkdir(path)
+                os.system(f"chown -R mvcs:mvcs {path}")
+            except:
+                pass
             # Get the main branch of the repo
             branches = Branch.objects.filter(
                 repo=branch.data['repo'], name="main")
@@ -82,12 +97,13 @@ class BranchList(APIView):
             main_branch_dir = "/home/mvcs/" +\
                 repo.owner.username + '/' + repo.name + '/' + "main"
             commit_file_name = f'{last_commit.unique_id}.tar.xz'
-
-            shutil.copy(os.path.join(main_branch_dir,
-                        commit_file_name), base_path)
-            os.system(
-                f"chown -R mvcs:mvcs {os.path.join(base_path, commit_file_name)}")
-
+            try:
+                shutil.copy(os.path.join(main_branch_dir,
+                            commit_file_name), base_path)
+                os.system(
+                    f"chown -R mvcs:mvcs {os.path.join(base_path, commit_file_name)}")
+            except:
+                pass
             return Response(branch.data, status=status.HTTP_201_CREATED)
         return Response(branch.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -120,14 +136,35 @@ class BranchDetail(APIView):
     def get(self, request, pk, format=None):
         branch = self.get_object(pk)
         serializer = CreateBranchSerializer(branch)
+        repo = branch.repo
+
+        if (repo.owner.id != self.request.user.id):
+            if len(
+                    [x for x in repo.contributors.all() if x.id == self.request.user.id]) == 0:
+                raise PermissionDenied()
+
+        if repo.private and not (self.request.user.id == repo.owner.id or len(
+                [x for x in repo.contributors.all() if x.id == self.request.user.id]) != 0):
+            raise PermissionDenied()
+
         return Response(serializer.data)
 
     def put(self, request, pk, format=None):
         branch = self.get_object(pk)
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
-        if branch.repo.owner.id is not self.request.user.id:
+
+        repo = branch.repo
+
+        if (repo.owner.id != self.request.user.id):
+            if len(
+                    [x for x in repo.contributors.all() if x.id == self.request.user.id]) == 0:
+                raise PermissionDenied()
+
+        if repo.private and not (self.request.user.id == repo.owner.id or len(
+                [x for x in repo.contributors.all() if x.id == self.request.user.id]) != 0):
             raise PermissionDenied()
+
         if branch.name == "main":
             return Response(
                 {'Error': 'You cannot modify the main branch!'},
@@ -143,13 +180,13 @@ class BranchDetail(APIView):
         serializer = ser(branch, data=request.data)
         if serializer.is_valid():
             # Rename the directory of the repository according to the update
-            try:
-                if request.data["name"]:
-                    repo_dir = '/home/mvcs/' + branch.repo.owner.username + '/' + branch.repo.name + '/'
+            if "name" in request.data:
+                repo_dir = '/home/mvcs/' + branch.repo.owner.username + '/' + branch.repo.name + '/'
+                try:
                     os.rename(repo_dir + branch.name, repo_dir +
                               serializer.validated_data['name'])
-            except:
-                pass
+                except:
+                    pass
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -158,17 +195,27 @@ class BranchDetail(APIView):
         branch = self.get_object(pk)
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
-        if branch.repo.owner.id is not self.request.user.id:
+
+        repo = branch.repo
+        if (repo.owner.id != self.request.user.id):
+            if len([x for x in repo.contributors.all() if x.id == self.request.user.id]) == 0:
+                raise PermissionDenied()
+
+        if repo.private and not (self.request.user.id == repo.owner.id or len(
+                [x for x in repo.contributors.all() if x.id == self.request.user.id]) != 0):
             raise PermissionDenied()
+
         if branch.name == "main":
             return Response(
                 {'Error': 'You cannot delete the main branch!'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         # Deleting the directory
-        shutil.rmtree(
-            '/home/mvcs/' + branch.repo.owner.username +
-            '/' + branch.repo.name + '/' + branch.name + '/')
+        try:
+            shutil.rmtree(
+                '/home/mvcs/' + branch.repo.owner.username +
+                '/' + branch.repo.name + '/' + branch.name + '/')
+        except:
+            pass
         branch.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-

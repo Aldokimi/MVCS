@@ -10,10 +10,17 @@ from ..serializers import CreateCommitSerializer, UpdateCommitSerializer
 
 from django.http import Http404
 
+
 class CommitList(APIView):
     """
     List all commits, or create a new commit.
     """
+
+    def get_branch_object(self, pk):
+        try:
+            return Branch.objects.get(pk=pk)
+        except Branch.DoesNotExist:
+            raise Http404
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -24,7 +31,23 @@ class CommitList(APIView):
     def get(self, request, format=None):
         commits = Commit.objects.all()
         serializer = CreateCommitSerializer(commits, many=True)
-        return Response(serializer.data)
+        data = []
+
+        for commit in serializer.data:
+            branch_id = commit["branch"]
+            branch = self.get_branch_object(branch_id)
+            print(branch)
+            repository = branch.repo
+            if not repository.private:
+                data.append(commit)
+            else:
+                if self.request.user.id == repository.owner or len(
+                    [x for x in repository.contributors.all() if x.id ==
+                     self.request.user.id]
+                ) != 0:
+                    data.append(commit)
+
+        return Response(data)
 
     def post(self, request, format=None):
         if not self.request.user.is_authenticated:
@@ -33,18 +56,16 @@ class CommitList(APIView):
         serializer = self.get_serializer_class()
         commit = serializer(data=request.data)
 
-        try:
-            branch = Branch.objects.get(pk=request.data["branch"])
-        except:
-            return Response(commit.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        print(self.request.user.id, [
-              user.id for user in branch.repo.contributors.all()])
-        if branch.repo.owner.id is not self.request.user.id and\
-                self.request.user.id not in [user.id for user in branch.repo.contributors.all()]:
-            raise PermissionDenied()
-
         if commit.is_valid():
+            try:
+                branch = Branch.objects.get(pk=request.data["branch"])
+            except:
+                return Response(commit.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            if branch.repo.owner.id is not self.request.user.id and\
+                    self.request.user.id not in [user.id for user in branch.repo.contributors.all()]:
+                raise PermissionDenied()
+
             commit.save()
             return Response(commit.data, status=status.HTTP_201_CREATED)
         return Response(commit.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -84,7 +105,7 @@ class CommitDetail(APIView):
                             "branch", "unique_id", "committer"]
         for k in request.data:
             if k in notAllowedValues:
-                return Response({"Error": "You cannot modify this field!"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"Error": "You cannot modify those fields!"}, status=status.HTTP_400_BAD_REQUEST)
 
         ser = self.get_serializer_class()
         serializer = ser(commit, data=request.data)
@@ -102,6 +123,9 @@ class CommitDetail(APIView):
             raise PermissionDenied()
         base_path = "/home/mvcs/" + commit.branch.repo.owner.username\
             + '/' + commit.branch.repo.name + '/' + commit.branch.name
-        os.remove(base_path + '/' + commit.unique_id + '.tar.xz')
+        try:
+            os.remove(base_path + '/' + commit.unique_id + '.tar.xz')
+        except:
+            pass
         commit.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

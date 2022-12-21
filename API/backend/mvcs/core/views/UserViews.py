@@ -7,10 +7,11 @@ from rest_framework import status
 from rest_framework.exceptions import PermissionDenied, NotAuthenticated
 
 from ..models import User
-from ..serializers import CreateUserSerializer, UpdateUserSerializer
+from ..serializers import CreateUserSerializer, UpdateUserSerializer, OwnUserSerializer
 from ..utils import get_user_branches, get_user_repositories, get_user_commits
 
 from django.http import Http404
+
 
 class UserList(APIView):
     """
@@ -35,7 +36,11 @@ class UserDetail(APIView):
             raise Http404
 
     def renameDirectory(self, path, dir_name, new_name):
-        subprocess.run(["mv", path + dir_name + '/', path + new_name + '/'])
+        try:
+            subprocess.run(
+                ["mv", path + dir_name + '/', path + new_name + '/'])
+        except:
+            pass
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -45,9 +50,14 @@ class UserDetail(APIView):
 
     def get(self, request, pk, format=None):
         user = self.get_object(pk)
+
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
-        serializer = CreateUserSerializer(user)
+
+        if self.request.user.id == user.id:
+            serializer = OwnUserSerializer(user)
+        else:
+            serializer = CreateUserSerializer(user)
         return Response(serializer.data)
 
     def put(self, request, pk, format=None):
@@ -83,9 +93,9 @@ class UserDetail(APIView):
                     with open("/home/mvcs/.ssh/authorized_keys", "a") as myfile:
                         print(myfile)
                         myfile.write(
-                            "\n" + serializer.validated_data['public_key'])
+                            serializer.validated_data['public_key'] + "\n")
                 except:
-                    print("couldn't upload ssh key")
+                    pass
 
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -97,8 +107,10 @@ class UserDetail(APIView):
             raise NotAuthenticated()
         if user.id is not self.request.user.id:
             raise PermissionDenied()
-
-        shutil.rmtree('/home/mvcs/' + user.username + '/')
+        try:
+            shutil.rmtree('/home/mvcs/' + user.username + '/')
+        except:
+            pass
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -118,6 +130,8 @@ class UserRepositories(APIView):
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
         user = self.get_object(pk)
+        if self.request.user.id != user.id:
+            raise PermissionDenied()
         data = get_user_repositories(user.id)
         return Response(data)
 
@@ -137,6 +151,8 @@ class UserBranches(APIView):
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
         user = self.get_object(pk)
+        if self.request.user.id != user.id:
+            raise PermissionDenied()
         data = get_user_branches(user.id)
         return Response(data)
 
@@ -156,5 +172,7 @@ class UserCommits(APIView):
         if not self.request.user.is_authenticated:
             raise NotAuthenticated()
         user = self.get_object(pk)
+        if self.request.user.id != user.id:
+            raise PermissionDenied()
         data = get_user_commits(user.id)
         return Response(data)
