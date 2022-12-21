@@ -68,6 +68,10 @@ class RepositoryList(APIView):
             raise NotAuthenticated()
 
         serializer = self.get_serializer_class()
+        # get the clone URL
+        username = self.get_user(request.data["owner"]).username
+        request.data["clone_url"] = self.get_clone_url(
+            username, request.data["name"])
         repositories = serializer(data=request.data)
 
         if repositories.is_valid():
@@ -76,10 +80,6 @@ class RepositoryList(APIView):
             if self.request.user.id != repository["owner"].id:
                 raise PermissionDenied()
 
-            # get the clone URL
-            username = self.get_user(request.data["owner"]).username
-            request.data["clone_url"] = self.get_clone_url(
-                username, request.data["name"])
             repositories.save()
             # Create a new director for the repository under the user's directory
             repo = self.get_object(repositories.data['id'])

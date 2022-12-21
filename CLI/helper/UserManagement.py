@@ -120,7 +120,7 @@ class UserManagement():
 
     def reset_new_commits(self, branch_folder):
         new_commits = self.get_user_data()["new_commits"]
-        initial_commit = {"0": new_commits[0]}
+        initial_commit = {"0": new_commits["0"]}
         try:
             with open(os.path.join(self.__config_folder, 'user_config.json'), 'w') as f:
                 self.__user_config['new_commits'] = initial_commit

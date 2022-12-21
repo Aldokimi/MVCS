@@ -73,6 +73,17 @@ class RepoManagement():
     def get_repo_config_file_path(self):
         return self.__repo_config_file
 
+    def get_commit_by_unique_id(self, unique_id, branch="main"):
+        branch_data = self.__repo_config['branches']
+        for branch_id in branch_data:
+            if branch_data[branch_id]["name"] == branch:    
+                commits = branch_data[branch_id]["commits"]
+                for commit_id in commits:
+                    commit = commits[commit_id]
+                    if commit["unique_id"] == unique_id:
+                        return { f"{commit_id}" : commit }
+        return {}
+
     def create_commit(self, commit_data):
         self.__operate_commit(commit_data['id'], commit_data)
 
