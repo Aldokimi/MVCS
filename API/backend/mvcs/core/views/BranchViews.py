@@ -31,6 +31,8 @@ class BranchList(APIView):
             return UpdateBranchSerializer
 
     def get(self, request, format=None):
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
         branches = Branch.objects.all()
         serializer = CreateBranchSerializer(branches, many=True)
         data = []
@@ -134,6 +136,8 @@ class BranchDetail(APIView):
             return UpdateBranchSerializer
 
     def get(self, request, pk, format=None):
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
         branch = self.get_object(pk)
         serializer = CreateBranchSerializer(branch)
         repo = branch.repo
@@ -188,6 +192,9 @@ class BranchDetail(APIView):
                 except:
                     pass
             serializer.save()
+            
+            print(serializer.validated_data)
+
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

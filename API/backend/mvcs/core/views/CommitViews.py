@@ -29,6 +29,8 @@ class CommitList(APIView):
             return UpdateCommitSerializer
 
     def get(self, request, format=None):
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
         commits = Commit.objects.all()
         serializer = CreateCommitSerializer(commits, many=True)
         data = []
@@ -89,6 +91,8 @@ class CommitDetail(APIView):
             return UpdateCommitSerializer
 
     def get(self, request, pk, format=None):
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
         commit = self.get_object(pk)
         serializer = CreateCommitSerializer(commit)
         return Response(serializer.data)

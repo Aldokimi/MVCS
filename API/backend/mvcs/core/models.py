@@ -1,9 +1,8 @@
-from datetime import datetime
-from email import message
-from operator import mod
+from django.db.models import IntegerField, Model
+from django_mysql.models import ListTextField
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import User, AbstractUser
+from django.contrib.auth.models import User
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import (
     BaseUserManager, AbstractBaseUser
@@ -111,7 +110,11 @@ class Branch(models.Model):
     date_created = models.DateTimeField(
         verbose_name="date created", default=timezone.now)
     has_locked_files = models.BooleanField(default=False)
-    locked = models.BooleanField(default=False)
+    locked_files = ListTextField(
+        base_field=IntegerField(),
+        size=100,
+        null=True,
+    )
 
 
 class Commit(models.Model):

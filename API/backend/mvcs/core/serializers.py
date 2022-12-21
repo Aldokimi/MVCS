@@ -90,7 +90,7 @@ class CreateBranchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Branch
         fields = ['id', 'name', 'date_created',
-                  'has_locked_files', 'locked', 'repo',]
+                  'has_locked_files', 'locked_files', 'repo',]
 
 
 class UpdateBranchSerializer(serializers.ModelSerializer):
@@ -98,7 +98,7 @@ class UpdateBranchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Branch
-        fields = ['id', 'name', 'has_locked_files', 'locked',]
+        fields = ['id', 'name', 'has_locked_files', 'locked_files',]
 
 
 class CreateCommitSerializer(serializers.ModelSerializer):
