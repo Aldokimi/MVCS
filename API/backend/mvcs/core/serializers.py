@@ -39,16 +39,24 @@ class PasswordChangeSerializer(serializers.Serializer):
         return value
 
 
+class OwnUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'id', 'username', 'password', 'email', 'is_active', 
+            'is_admin', 'linkedin_token', 'date_joined',
+            'last_login', 'first_name', 'last_name', 'bio', 
+            'date_of_birth', 'profile_picture', 'public_key',
+        ]
+
+
 class CreateUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'password', 'email', 'is_active', 'is_admin', 'linkedin_token', 'date_joined',
-            'last_login', 'first_name', 'last_name', 'bio', 'date_of_birth', 'profile_picture', 'public_key',
+            'id', 'username', 'email', 'is_active', 'date_joined',
+            'first_name', 'last_name', 'bio', 'date_of_birth', 'profile_picture',
         ]
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
 
 
 class UpdateUserSerializer(serializers.ModelSerializer):
@@ -82,7 +90,7 @@ class CreateBranchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Branch
         fields = ['id', 'name', 'date_created',
-                  'has_locked_files', 'locked', 'repo',]
+                  'has_locked_files', 'locked_files', 'repo',]
 
 
 class UpdateBranchSerializer(serializers.ModelSerializer):
@@ -90,7 +98,7 @@ class UpdateBranchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Branch
-        fields = ['id', 'name', 'has_locked_files', 'locked',]
+        fields = ['id', 'name', 'has_locked_files', 'locked_files',]
 
 
 class CreateCommitSerializer(serializers.ModelSerializer):
