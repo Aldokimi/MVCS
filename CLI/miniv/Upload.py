@@ -22,7 +22,6 @@ class upload():
         # Check if we have SSH connection
         user = self.__upload_url.split('@')[0]
         host = self.__upload_url.split('@')[1].rsplit(':', 1)[0]
-        print(user + "@" + host)
         if not self.__user_mgt.check_ssh(host=host, user=user):
             ph.err("You don't have SSH authority to upload to this repository!")
             return
@@ -71,9 +70,9 @@ class upload():
                     raise Exception(
                         'Error, cannot create a put commit request to the API,'
                         f' response code {response.status_code}!')
+
             else:  # If this is a normal commit and not amend commit
                 response = self.__apply_commit_on_API("post", commit_data)
-                print(response.content)
                 if response and response.status_code == 201:
                     self.__repo_management.create_commit(response.json())
                 else:
@@ -102,16 +101,6 @@ class upload():
         self.__user_mgt.reset_new_commits(branch_folder)
 
         ph.ok(" Uploaded changes successfully!")
-
-    def __get_last_commit(self, branch=None):
-        branch_name = branch if branch else self.__user_mgt.get_user_data()[
-            "current_branch"]
-        _, commit_a = self.__user_mgt.get_last_new_commit(
-            self.__repo_management.get_branch_data(branch_name)["id"]
-        )
-        commit_b = self.__repo_management.get_latest_commit(branch_name)
-        commit = self.__repo_management.get_largest_commit(commit_a, commit_b)
-        return commit
 
     def __apply_commit_on_API(self, method, commit_data, commit_id=None):
         '''
