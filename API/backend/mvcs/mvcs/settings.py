@@ -29,8 +29,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-AUTH_USER_MODEL = "core.User" 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -40,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
+    'drf_yasg',
     'core',
     'rest_framework',
     'rest_framework.authtoken',
@@ -62,6 +60,7 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:8000",
 ]
 
 CORS_ALLOW_METHODS = [
