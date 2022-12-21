@@ -1,4 +1,4 @@
-from django.db.models import IntegerField, Model
+from django.db.models import IntegerField
 from django_mysql.models import ListTextField
 from django.db import models
 from django.utils import timezone
