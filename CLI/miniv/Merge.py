@@ -169,7 +169,8 @@ class merge():
             else:
                 ph.ok(" Merged the current branch to main successfully!")
 
-    def merge_files(self, old_file, new_file):
+    @staticmethod
+    def merge_files(old_file, new_file):
         try:
             with open(old_file) as old, open(new_file) as new:
                 old_lines = old.readlines()
@@ -216,7 +217,7 @@ class merge():
                                     composed_text += pluses
                                 else:
                                     has_conflicts = True
-                                    composed_text += self.__conflict_text(
+                                    composed_text += conflict_text(
                                         pluses, minuses)
                                 composed_text.append(diff_line[2:])
                             i += 1
@@ -226,21 +227,22 @@ class merge():
                                 composed_text += pluses
                             else:
                                 has_conflicts = True
-                                composed_text += self.__conflict_text(
+                                composed_text += conflict_text(
                                     pluses, minuses)
                 return (''.join(composed_text), has_conflicts)
         except Exception as e:
             raise Exception(
                 "Error, cannot open comparison files: \n{}".format(e))
 
-    def __conflict_text(self, pluses, minuses):
-        composed_text = []
-        new_changes_line = "\n>>>>>>>>>>>>>>>>> New changes +++\n"
-        composed_text.append(new_changes_line)
-        composed_text += pluses
-        middle_line = "\n================= +++\n"
-        composed_text.append(middle_line)
-        composed_text += minuses
-        old_changes_line = "\n<<<<<<<<<<<<<<<<< Old changes ---\n"
-        composed_text.append(old_changes_line)
-        return composed_text
+
+def conflict_text(pluses, minuses):
+    composed_text = []
+    new_changes_line = "\n>>>>>>>>>>>>>>>>> New changes +++\n"
+    composed_text.append(new_changes_line)
+    composed_text += pluses
+    middle_line = "\n================= +++\n"
+    composed_text.append(middle_line)
+    composed_text += minuses
+    old_changes_line = "\n<<<<<<<<<<<<<<<<< Old changes ---\n"
+    composed_text.append(old_changes_line)
+    return composed_text

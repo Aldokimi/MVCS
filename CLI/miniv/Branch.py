@@ -266,7 +266,6 @@ def checkOut(branch_name, config_folder, repo_management, user_management):
             branch_folder, f'{last_commit_unique_id}.tar.xz')
         working_dir = config_folder.split('.mvcs')[0]
 
-        print(commit_folder)
         # Extract the last commit file on main into the working directory
         if Repository.repo.is_nonempty_tar_file(commit_folder):
             try:
