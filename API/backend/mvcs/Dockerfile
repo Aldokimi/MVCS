@@ -1,6 +1,5 @@
 # MVCS API with SSH Server container
 # Base Image
-
 FROM ubuntu:20.04
 
 #Update APT repository && Install OpenSSH
