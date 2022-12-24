@@ -1,0 +1,108 @@
+{
+    "id": 104,
+    "name": "test_repo",
+    "date_created": "2022-12-21T20:53:48.716269Z",
+    "last_updated": "2022-12-21T20:53:48.716285Z",
+    "private": false,
+    "contributors": [],
+    "owner": 54,
+    "clone_url": "mvcs@172.31.193.222:~/doki/test_repo",
+    "description": null,
+    "owner_data": {
+        "id": 54,
+        "username": "doki",
+        "email": "doki@email.com",
+        "is_active": true,
+        "date_joined": "2022-12-21T14:54:52.140329Z",
+        "first_name": null,
+        "last_name": null,
+        "bio": null,
+        "date_of_birth": null,
+        "profile_picture": null
+    },
+    "branches": {
+        "230": {
+            "id": 230,
+            "name": "main",
+            "date_created": "2022-12-21T20:53:48.852248Z",
+            "has_locked_files": false,
+            "locked_files": null,
+            "repo": 104,
+            "commits": {
+                "354": {
+                    "id": 354,
+                    "date_created": "2022-12-21T20:53:48.913241Z",
+                    "date_updated": "2022-12-21T20:53:48.913257Z",
+                    "message": "Initial commit",
+                    "branch": 230,
+                    "committer": 54,
+                    "unique_id": "49b245f0cf5b4273bfa04aec4083a859"
+                },
+                "355": {
+                    "id": 355,
+                    "date_created": "2022-12-21T22:11:54.075929Z",
+                    "date_updated": "2022-12-21T21:52:15.564487Z",
+                    "message": "Added stuff",
+                    "branch": 230,
+                    "committer": 54,
+                    "unique_id": "12a3112b438a4fcc9115fbe0fb458d65"
+                },
+                "356": {
+                    "id": 356,
+                    "date_created": "2022-12-21T22:11:54.075929Z",
+                    "date_updated": "2022-12-21T21:56:14.256222Z",
+                    "message": "Added stuff",
+                    "branch": 230,
+                    "committer": 54,
+                    "unique_id": "12a3112b438a4fcc9115fbe0fb458d65"
+                },
+                "359": {
+                    "id": 359,
+                    "date_created": "2022-12-21T23:05:27.514975Z",
+                    "date_updated": "2022-12-21T22:06:02.696124Z",
+                    "message": "New commit in main",
+                    "branch": 230,
+                    "committer": 54,
+                    "unique_id": "4945016159ae435e8f857f374ceec33b"
+                }
+            }
+        },
+        "231": {
+            "id": 231,
+            "name": "pp",
+            "date_created": "2022-12-21T21:57:52.021486Z",
+            "has_locked_files": false,
+            "locked_files": null,
+            "repo": 104,
+            "commits": {
+                "355": {
+                    "id": 355,
+                    "date_created": "2022-12-21T22:11:54.075929Z",
+                    "date_updated": "2022-12-21T21:52:15.564487Z",
+                    "message": "Added stuff",
+                    "branch": 230,
+                    "committer": 54,
+                    "unique_id": "12a3112b438a4fcc9115fbe0fb458d65"
+                },
+                "357": {
+                    "id": 357,
+                    "date_created": "2022-12-21T23:02:12.054188Z",
+                    "date_updated": "2022-12-21T22:02:24.066362Z",
+                    "message": "New commit in pp",
+                    "branch": 231,
+                    "committer": 54,
+                    "unique_id": "e57feb35b27a43749d61f84f8a1ecaf0"
+                },
+                "358": {
+                    "id": 358,
+                    "date_created": "2022-12-21T23:04:46.609142Z",
+                    "date_updated": "2022-12-21T22:06:02.634220Z",
+                    "message": "New commit in pp two",
+                    "branch": 231,
+                    "committer": 54,
+                    "unique_id": "0e343d6d638c477a81dccd382bd94089"
+                }
+            }
+        }
+    }
+}

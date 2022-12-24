@@ -163,8 +163,9 @@ class repo():
                     response = requests.get(
                         f'http://127.0.0.1:8000/api/v1/repos/data/{repo_owner}/{self.__repo_name}/', headers=headers)
                     if response.status_code != 200:
-                        raise Exception(
+                        ph.err(
                             "Error, requesting repo data failed, please check your clone URL and try again")
+                        return
                     repo_data = response.json()
                     json.dump(repo_data, f)
             except:
@@ -215,7 +216,7 @@ class repo():
                 raise Exception(
                     "Couldn't extract the last commit to main during cloning!")
 
-        ph.ok("    Cloned successfully!")
+        ph.ok(" Cloned successfully!")
 
     @staticmethod
     def is_nonempty_tar_file(archive):

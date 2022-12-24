@@ -41,7 +41,7 @@ class RepoManagement():
         if found:
             return target_branch
         else:
-            ph.err("Error, there is not branch with name {}!".format(branch_name))
+            ph.err("Error, there is no branch with name {}!".format(branch_name))
             return None
 
     def get_latest_commit(self, branch_name):
@@ -87,8 +87,23 @@ class RepoManagement():
     def create_commit(self, commit_data):
         self.__operate_commit(commit_data['id'], commit_data)
 
+    def __get_commit_by_id(self, commit_id):
+        branches = self.get_repo_config()["branches"]
+        for branch_id in branches:
+            branch = branches[branch_id]
+            commits = branch["commits"]
+            if f"{commit_id}" in commits:
+                return commits[f"{commit_id}"]
+        return None
+
     def modify_commit(self, commit_data, commit_id):
-        self.__operate_commit(commit_id, commit_data)
+        commit_data_to_be_modified = self.__get_commit_by_id(commit_id)
+        if commit_data_to_be_modified is None:
+            raise Exception("Error, cannot modify this commit because it doesn't exists!")
+        for key, value in commit_data.items():
+            if key in commit_data_to_be_modified:
+                commit_data_to_be_modified[key] = value
+        self.__operate_commit(commit_id, commit_data_to_be_modified)
 
     def delete_commit(self, branch, commit_id):
         try:

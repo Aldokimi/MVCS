@@ -1,0 +1,20 @@
+{
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6NDgyNTI1NjYzNiwiaWF0IjoxNjcxNjU2NjM2LCJqdGkiOiI4ZGYyZTA4MjExYjQ0OTUyODQwNzU2NjRjODNiNmExOSIsInVzZXJfaWQiOjU0fQ.U1ibTAv-PFfHbPVj6T_o7reb41lsqQhkmdVCfa0f0a4",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjo0ODI1MjU2NjM2LCJpYXQiOjE2NzE2NTY2MzYsImp0aSI6IjU5YTIyODJkZjBjNTRkOGI5MDA5NTJhN2E1NGM0NmMxIiwidXNlcl9pZCI6NTR9.rjwT--D8HeNUfVJ97It0CbcytugkIBrm52JRyhjIp6E",
+    "current_branch": "main",
+    "email": "doki@email.com",
+    "id": 54,
+    "password": "7YltaT15eLIeNtNUCyrAlDUgit9Ssodw9www/3w8jbZ0aO9UO7uB7Q==",
+    "clone_url": "mvcs@172.31.193.222:~/doki/test_repo",
+    "new_commits": {
+        "0": {
+            "id": 354,
+            "date_created": "2022-12-21T20:53:48.913241Z",
+            "date_updated": "2022-12-21T20:53:48.913257Z",
+            "message": "Initial commit",
+            "branch": 230,
+            "committer": 54,
+            "unique_id": "49b245f0cf5b4273bfa04aec4083a859"
+        }
+    }
+}
