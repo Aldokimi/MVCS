@@ -142,7 +142,7 @@ class repo():
         # Check the ability to do SSH connection
         user = self.__clone_url.split('@')[0]
         print(user + '@' + host)
-        if not self.__UM.check_ssh(host=host, user=user):
+        if not self.__UM.check_ssh(host=host, user=user, port=8008):
             ph.err(
                 "You are not SSH authorized to clone this repo, "
                 "please make sure to upload your public key to the MVCShub!")
@@ -188,7 +188,7 @@ class repo():
                 branch_name = branches[branch_id]["name"]
                 p = subprocess.run(
                     [
-                        'scp', '-r',
+                        'scp', '-p', '8008', '-r',
                         f'{self.__clone_url}/{branch_name}/',
                         f'{self.__UM.fix_path(self.__config_folder)}'
                     ]

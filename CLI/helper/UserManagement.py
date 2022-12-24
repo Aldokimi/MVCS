@@ -58,7 +58,7 @@ class UserManagement():
     def fix_path(self, path):
         return str(path.replace('\\', '/'))
 
-    def check_ssh(self, host, user, port=20):
+    def check_ssh(self, host, user, port=8008):
         sshClient = paramiko.SSHClient()
         sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
