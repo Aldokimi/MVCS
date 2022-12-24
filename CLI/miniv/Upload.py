@@ -22,7 +22,7 @@ class upload():
         # Check if we have SSH connection
         user = self.__upload_url.split('@')[0]
         host = self.__upload_url.split('@')[1].rsplit(':', 1)[0]
-        if not self.__user_mgt.check_ssh(host=host, user=user):
+        if not self.__user_mgt.check_ssh(host=host, user=user, port=8008):
             ph.err("You don't have SSH authority to upload to this repository!")
             return
 
@@ -88,7 +88,7 @@ class upload():
                     branch_folder, f'{commit["unique_id"]}.tar.xz')
                 try:
                     p = subprocess.run([
-                        'scp', commit_file,
+                        'scp', '-p', '8008', commit_file,
                         f'{self.__upload_url}/{branch_name}/'
                     ])
                     if p.returncode != 0:

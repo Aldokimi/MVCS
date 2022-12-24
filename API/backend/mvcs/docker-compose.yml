@@ -10,6 +10,7 @@ services:
       - MYSQL_DATABASE=mvcs
     ports:
       - 3306:3306
+
   api:
     build: .
     command: | 
