@@ -8,6 +8,8 @@ services:
       - MYSQL_USER=mvcs
       - MYSQL_PASSWORD=testpassword
       - MYSQL_DATABASE=mvcs
+    ports:
+      - 3306:3306
   api:
     build: .
     command: | 
@@ -18,6 +20,7 @@ services:
     volumes:
       - .:/code
     ports:
-      - "8000:8000"
+      - 8000:8000
+      - 8008:22
     depends_on:
       - db

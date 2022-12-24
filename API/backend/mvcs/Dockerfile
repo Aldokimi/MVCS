@@ -1,5 +1,5 @@
-#MVCS API with SSH Server container
-#Base Image
+# MVCS API with SSH Server container
+# Base Image
 FROM ubuntu:20.04
 
 #Update APT repository && Install OpenSSH
@@ -25,6 +25,10 @@ RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' \
 RUN sed 's@session\s*required\s*pam_loginuid.so@session optional \
     pam_loginuid.so@g' -i /etc/pam.d/sshd
 
+#SSH authorized keys fix
+RUN sed '/AuthorizedKeysFile/c\AuthorizedKeysFile     \
+    .ssh/authorized_keys .ssh/authorized_keys2/' -i /etc/ssh/sshd_config
+
 #expose port 22
 EXPOSE 22
 
@@ -37,16 +41,18 @@ CMD ["/usr/sbin/sshd","-D"]
 ENV PYTHONUNBUFFERED 1
 
 # Create the mvcs user which will be the woner of the appliction
-RUN  useradd mvcs \
-&& su mvcs \
+RUN useradd mvcs \
 && mkdir /home/mvcs \
 && mkdir /home/mvcs/.ssh \
-&& touch /home/mvcs/.ssh/authorized_keys
+&& touch /home/mvcs/.ssh/authorized_keys \
+&& chmod 700 /home/mvcs/.ssh\
+&& chmod 600 /home/mvcs/.ssh/authorized_keys \
+&& chown mvcs:mvcs /home/mvcs/.ssh\
+&& chown mvcs:mvcs /home/mvcs/.ssh/authorized_keys
 
 # Create the working directory
 RUN mkdir /code
 WORKDIR /code
-
 
 # Installing requirements an copying  the data
 ADD requirements.txt /code/
