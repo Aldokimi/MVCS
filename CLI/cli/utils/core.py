@@ -1,11 +1,11 @@
 import os
 
-from miniv import Repository, Commit, Branch, Upload,\
+from cli.miniv import Repository, Commit, Branch, Upload,\
     Status, Diff, Merge, Update
 
-from helper import RepoManagement as RM
-from helper import UserManagement as UM
-from helper import print_helper as PH
+from cli.helper import RepoManagement as RM
+from cli.helper import UserManagement as UM
+from cli.helper import print_helper as PH
 
 IN_REPO = '.mvcs' in os.listdir(os.getcwd())
 

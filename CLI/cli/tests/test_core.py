@@ -4,13 +4,13 @@ import json
 
 from deepdiff import DeepDiff
 
-from helper import RepoManagement as RM
-from helper import UserManagement as UM
+from cli.helper import RepoManagement as RM
+from cli.helper import UserManagement as UM
 
-from miniv import Repository
-from miniv import Branch
-from miniv import Diff
-from miniv import Merge
+from cli.miniv import Repository
+from cli.miniv import Branch
+from cli.miniv import Diff
+from cli.miniv import Merge
 
 
 # Test RepoManagement.py

@@ -6,9 +6,9 @@ import uuid
 
 from . import Repository
 
-from helper import RepoManagement as RM
-from helper import UserManagement as UM
-from helper import print_helper as ph
+from cli.helper import RepoManagement as RM
+from cli.helper import UserManagement as UM
+from cli.helper import print_helper as ph
 
 
 class diff():
