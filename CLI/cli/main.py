@@ -5,9 +5,9 @@ import argcomplete
 import traceback
 
 from subprocess import CalledProcessError
-from helper import print_helper as ph
+from cli.helper import print_helper as ph
 
-import utils.parser as prs
+import cli.utils.parser as prs
 
 __version__ = '0.1'
 SUCCESS = 0
@@ -101,6 +101,3 @@ def main():
                 __version__, traceback.format_exc()))
         return INTERNAL_ERROR
 
-
-if __name__ == "__main__":
-    main()

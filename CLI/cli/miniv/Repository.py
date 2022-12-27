@@ -6,9 +6,9 @@ import os
 import json
 
 from getpass import getpass
-from helper import print_helper as ph
-from helper import UserManagement as UM
-from helper import RepoManagement as RM
+from cli.helper import print_helper as ph
+from cli.helper import UserManagement as UM
+from cli.helper import RepoManagement as RM
 
 
 class repo():
