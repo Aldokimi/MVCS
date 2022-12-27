@@ -143,7 +143,7 @@ def diff_repo(config_folder, repo_management, user_mgt):
         with tarfile.open(commit_file) as ccf:
             ccf.extractall(test_dir)
 
-    test_branch_list = [item.split(os.sep)[1]
+    test_branch_list = [item[len(os.sep):]
                         for item in repo_management.path_to_list(test_dir)]
 
     # print(test_branch_list)

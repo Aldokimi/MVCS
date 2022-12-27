@@ -189,14 +189,15 @@ class repo():
                 branch_name = branches[branch_id]["name"]
                 p = subprocess.run(
                     [
-                        'scp', '-p', '8008', '-r',
+                        'scp', '-rP', '8008',
                         f'{self.__clone_url}/{branch_name}/',
                         f'{self.__UM.fix_path(self.__config_folder)}'
                     ]
                 )
                 if p.returncode != 0:
-                    raise Exception(
+                    ph.err(
                         "Error, Downloading repo data failed, make sure to upload the ssk key to the MVCShub!")
+                    return
         except subprocess.CalledProcessError or p.returncode != 0:
             raise Exception(
                 "Error, error occurred during downloading the data!")

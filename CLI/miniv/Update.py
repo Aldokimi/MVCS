@@ -76,7 +76,7 @@ class update():
                         commit_unique_id = commit["unique_id"]
                         compressed_file = f'{branch_name}/{commit_unique_id}.tar.xz'
                         p = subprocess.run([
-                            'scp', '-p', '8008',
+                            'scp', '-P', '8008',
                             f'{clone_url}/{current_branches[branch_id]["name"]}/{compressed_file}'
                             f'{self.__config_folder}/{current_branch}',
                         ])
@@ -93,7 +93,7 @@ class update():
                 branch_name = new_branches[branch_id]["name"]
                 p = subprocess.run(
                     [
-                        'scp', '-p', '8008', '-r',
+                        'scp', '-rP', '8008',
                         f'{clone_url}/{branch_name}/',
                         f'{self.__config_folder}'
                     ]

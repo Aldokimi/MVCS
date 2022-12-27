@@ -6,7 +6,7 @@ from ..models import User, Repository,  Branch, Commit
 class UserFactory(DjangoModelFactory):
     class Meta:
         model = User
-    username = factory.Faker('user_name')
+    username = factory.Sequence(lambda n: 'user%03d' % n)
     email = factory.Faker('email')
     date_of_birth = factory.Faker('date_time')
     is_active = factory.Faker('pybool')
@@ -27,13 +27,20 @@ class RepositoryFactory(DjangoModelFactory):
     class Meta:
         model = Repository
 
-    name = factory.Faker('name')
+    name = factory.Sequence(lambda n: 'repo%03d' % n)
     date_created = factory.Faker('date_time')
     last_updated = factory.Faker('date_time')
     private = factory.Faker('pybool')
-    clone_url = "mvcs@172.24.153.165:~/doki/test"
+    clone_url = "mvcs@10.10.10.10:~/faker/fake_url"
     description = factory.Faker('sentence')
     owner = factory.Faker(UserFactory)
+    @factory.post_generation
+    def contributors(self, create, extracted, **kwargs):
+        if not create:
+            return
+        if extracted:
+            for contributor in extracted:
+                self.contributors.add(contributor)
 
 
 class BranchFactory(DjangoModelFactory):
@@ -41,10 +48,9 @@ class BranchFactory(DjangoModelFactory):
         model = Branch
 
     repo = factory.Faker(RepositoryFactory)
-    name = factory.Faker('name')
+    name = factory.Sequence(lambda n: 'branch%03d' % n)
     date_created = factory.Faker('date_time')
     has_locked_files = factory.Faker('pybool')
-    locked = factory.Faker('pybool')
 
 
 class CommitFactory(DjangoModelFactory):

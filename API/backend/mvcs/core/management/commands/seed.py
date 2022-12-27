@@ -39,11 +39,13 @@ class Command(BaseCommand):
         self.stdout.write("Deleting old data...")
         models = [User, Repository, Branch, Commit]
         for user in User.objects.all():
-            shutil.rmtree('/home/mvcs/' + user.username + '/')
+            if os.path.isdir('/home/mvcs/' + user.username + '/'):
+                shutil.rmtree('/home/mvcs/' + user.username + '/')
         for m in models:
             m.objects.all().delete()
 
         self.stdout.write("Creating new data...")
+
         # Create all the users
         people = []
         for _ in range(NUM_OF_FAKE_USERS):
@@ -51,6 +53,9 @@ class Command(BaseCommand):
             path = os.path.join("/home/mvcs/", person.username + '/')
             os.mkdir(path)
             os.system(f"chown -R mvcs:mvcs {path}")
+            print(person)
+            person.set_password('password')
+            person.save()
             people.append(person)
         self.stdout.write(self.style.SUCCESS(
             'Successfully seeded fake USERS into the database'))
@@ -59,9 +64,11 @@ class Command(BaseCommand):
         repos = []
         for _ in range(NUM_OF_FAKE_REPOSITORIES):
             owner = random.choice(people)
-            contr = random.choice(people)
-            repo = RepositoryFactory(owner=owner)
-            print(repo)
+            contr = random.sample(people, 3)
+            repo = RepositoryFactory.create(
+                owner=owner, 
+                contributors=(contr[0], contr[1], contr[2])
+            )
             path = os.path.join(
                 "/home/mvcs/" + repo.owner.username + '/', repo.name)
             os.mkdir(path)
@@ -138,9 +145,8 @@ class Command(BaseCommand):
             os.system(f"chown -R mvcs:mvcs {path}")
 
             # Get the main branch of the repo
-            branches = Branch.objects.filter(repo=branch.repo, name="main")
-            main_branch = branches.first()
-            print(main_branch.name)
+            branches_with_main = Branch.objects.filter(repo=branch.repo, name="main")
+            main_branch = branches_with_main.first()
             last_commit = self.get_last_commit(main_branch.id)
 
             # Copy the last commit from the main branch
