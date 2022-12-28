@@ -53,7 +53,6 @@ class Command(BaseCommand):
             path = os.path.join("/home/mvcs/", person.username + '/')
             os.mkdir(path)
             os.system(f"chown -R mvcs:mvcs {path}")
-            print(person)
             person.set_password('password')
             person.save()
             people.append(person)

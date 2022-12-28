@@ -1,4 +1,7 @@
 import factory
+from netifaces import AF_INET
+import netifaces as ni
+
 from factory.django import DjangoModelFactory
 from ..models import User, Repository,  Branch, Commit
 
@@ -31,9 +34,9 @@ class RepositoryFactory(DjangoModelFactory):
     date_created = factory.Faker('date_time')
     last_updated = factory.Faker('date_time')
     private = factory.Faker('pybool')
-    clone_url = "mvcs@10.10.10.10:~/faker/fake_url"
     description = factory.Faker('sentence')
     owner = factory.Faker(UserFactory)
+    clone_url = f'mvcs@{ni.ifaddresses("eth0")[AF_INET][0]["addr"]}:~/{name}/{owner}'
     @factory.post_generation
     def contributors(self, create, extracted, **kwargs):
         if not create:

@@ -84,6 +84,13 @@ class branch():
         return commit
 
     def __create_branch(self):
+        # Check if we have commits that are not uploaded
+        last_commit_id, last_commit = self.__user_mgt.get_last_new_commit()
+        if last_commit_id != 0:
+            ph.err(
+                "Error, you have changes that are not uploaded, please upload yor changes first!")
+            return
+
         # Create branch through the API
         branch_data = self.__operate_branch_on_API(
             'post', branch_name=self.__create)
@@ -95,7 +102,7 @@ class branch():
             response = json.loads(branch_data.text)
             ph.err(f'Error, in the API side {response["Error"]}')
             return
-            
+
         # Create the new branch folder
         new_branch_folder = os.path.join(self.__config_folder, self.__create)
         try:
@@ -240,7 +247,10 @@ def checkOut(branch_name, config_folder, repo_management, user_management):
             return
 
         # Trying to get the branch, so if the branch doesn't exists and exception will be raised here
-        branch_data = repo_management.get_branch_data(branch_name=branch_name)
+        try:
+            branch_data = repo_management.get_branch_data(branch_name=branch_name)
+        except:
+            ph.err("Error, there is no branch with name {}!".format(branch_name))
         if not branch_data:
             raise Exception("Error, couldn't get branch data!")
 

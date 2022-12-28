@@ -34,6 +34,7 @@ class repo():
             else:
                 ph.err(
                     f"Error, there is already a directory with the same name <{self.__repo_name}>!")
+                print("\n")
                 return
 
             # create the config folder path
@@ -46,9 +47,11 @@ class repo():
                     shutil.rmtree(self.__repo_path)
                 ph.err(
                     "Error, there already exists a config directory (you are already in a repository)!")
+                print("\n")
                 return
         else:
             ph.err("Error, wrong input, please clone repository or create a new one!")
+            print("\n")
             return
 
         if self.__clone_url:
@@ -98,6 +101,7 @@ class repo():
             user_data['clone_url'] = self.__clone_url
         else:
             ph.err("Error, wrong credentials, please try to clone again!")
+            print("\n")
             return
 
         return user_data
@@ -141,11 +145,12 @@ class repo():
 
         # Check the ability to do SSH connection
         user = self.__clone_url.split('@')[0]
-        print(user + '@' + host)
+
         if not self.__UM.check_ssh(host=host, user=user, port=8008):
             ph.err(
                 "You are not SSH authorized to clone this repo, "
                 "please make sure to upload your public key to the MVCShub!")
+            print("\n")
             if not os.path.exists(self.__repo_path):
                 shutil.rmtree(self.__repo_path)
             return
@@ -165,6 +170,7 @@ class repo():
                     if response.status_code != 200:
                         ph.err(
                             "Error, requesting repo data failed, please check your clone URL and try again")
+                        print("\n")
                         return
                     repo_data = response.json()
                     json.dump(repo_data, f)
@@ -197,6 +203,7 @@ class repo():
                 if p.returncode != 0:
                     ph.err(
                         "Error, Downloading repo data failed, make sure to upload the ssk key to the MVCShub!")
+                    print("\n")
                     return
         except subprocess.CalledProcessError or p.returncode != 0:
             raise Exception(

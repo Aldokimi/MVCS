@@ -62,7 +62,7 @@ class UserManagement():
         sshClient = paramiko.SSHClient()
         sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
-            sshClient.connect(hostname=host, username=user)
+            sshClient.connect(hostname=host, username=user, port=port)
             stdin, stdout, stderr = sshClient.exec_command('exit')
             return True
         except: return False
@@ -94,15 +94,13 @@ class UserManagement():
     def get_last_new_commit(self, branch_id=None):
         last_commit = self.__user_config['new_commits']['0']
         commit_internal_id = 0
-        if branch_id:
-            for commit in self.__user_config['new_commits']:
-                if int(commit) >= commit_internal_id and\
-                        int(self.__user_config['new_commits'][commit]["branch"]) == branch_id:
-                    last_commit = self.__user_config['new_commits'][commit]
-                    commit_internal_id = int(commit)
-        else:
-            for commit in self.__user_config['new_commits']:
-                if int(commit) > commit_internal_id:
+        for commit in self.__user_config['new_commits']:
+            if int(commit) > commit_internal_id:
+                if branch_id:
+                    if branch_id == self.__user_config['new_commits'][commit]["branch"]:
+                        last_commit = self.__user_config['new_commits'][commit]
+                        commit_internal_id = int(commit)
+                else:
                     last_commit = self.__user_config['new_commits'][commit]
                     commit_internal_id = int(commit)
 

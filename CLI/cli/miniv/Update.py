@@ -35,6 +35,7 @@ class update():
         if len(new_commits_internally) != 1:
             ph.err(
                 "You have to upload the changes that you have before updating the repository!")
+            return
 
         # Get all repo data
         repo_name = self.__repo_management.get_repo_config()["name"]

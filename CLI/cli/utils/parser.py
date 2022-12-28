@@ -10,7 +10,7 @@ def create_repo_parser(subparsers):
         '-c', '--create', help='create a new local repository', dest='create',
         metavar='repo')
     create_group.add_argument(
-        '-cl', '--clone', help='clone a repository \'miniv --clone URL\' ', dest='clone')
+        '-cl', '--clone', help='clone a repository \'mvcs --clone URL\' ', dest='clone')
     repo_parser.set_defaults(func=core.create_repo)
 
 
@@ -66,7 +66,7 @@ def branch_parser(subparsers):
 
     edit_group = branch_parser.add_argument_group('edit branches')
     edit_group.add_argument('-rn', '--rename', nargs='+',
-                            help='renames the current branch (miniv branch -rn new_name)'
+                            help='renames the current branch (mvcs branch -rn new_name)'
                             'or another specified branch (mg branch -rn branch_name new_name)',
                             dest='rename_b'
                             )

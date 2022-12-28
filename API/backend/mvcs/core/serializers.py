@@ -43,10 +43,10 @@ class OwnUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'password', 'email', 'is_active', 
+            'id', 'username', 'email', 'is_active', 
             'is_admin', 'linkedin_token', 'date_joined',
             'last_login', 'first_name', 'last_name', 'bio', 
-            'date_of_birth', 'profile_picture', 'public_key',
+            'date_of_birth', 'profile_picture',
         ]
 
 
@@ -61,12 +61,11 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
 class UpdateUserSerializer(serializers.ModelSerializer):
     username = serializers.CharField(max_length=100, required=False)
-    email = serializers.CharField(max_length=100, required=False)
 
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'email', 'linkedin_token', 'first_name',
+            'id', 'username', 'linkedin_token', 'first_name',
             'last_name', 'bio', 'date_of_birth', 'profile_picture', 'public_key',
         ]
 
