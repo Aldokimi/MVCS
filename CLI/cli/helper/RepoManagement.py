@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import shutil
 
@@ -41,8 +42,7 @@ class RepoManagement():
         if found:
             return target_branch
         else:
-            ph.err("Error, there is no branch with name {}!".format(branch_name))
-            return None
+            sys.exit(0)
 
     def get_latest_commit(self, branch_name):
         '''

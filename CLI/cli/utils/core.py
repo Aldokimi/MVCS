@@ -15,10 +15,10 @@ def create_repo(args):
     Creating a new repository:
         You have two options:
 
-            * To clone a repository from the remote server, you can use for this `miniv repo --clone clone_url`
+            * To clone a repository from the remote server, you can use for this `mvcs repo --clone clone_url`
             * To create a new repository, for this a new repository will be created locally but you will \
 have the option to create this repository remotely as well,\
-you can user for this `miniv repo --create name_of_the_new_repo`
+you can user for this `mvcs repo --create name_of_the_new_repo`
     '''
     try:
         Repository.repo(args)

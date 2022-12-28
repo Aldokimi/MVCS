@@ -77,7 +77,6 @@ class UserDetail(APIView):
         serializer = get_ser(user, data=request.data)
         if serializer.is_valid():
             serializer.save()
-            print(request.data)
 
             if "username" in request.data:
                 if user.username != serializer.validated_data["username"]:
@@ -87,11 +86,9 @@ class UserDetail(APIView):
                         serializer.validated_data['username']
                     )
             if "public_key" in request.data:
-                print(request.data["public_key"])
                 # Add this public key to the end of the authorized_keys file
                 try:
                     with open("/home/mvcs/.ssh/authorized_keys", "a") as myfile:
-                        print(myfile)
                         myfile.write(
                             serializer.validated_data['public_key'] + "\n")
                 except:

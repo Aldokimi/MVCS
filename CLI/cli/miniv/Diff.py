@@ -50,7 +50,7 @@ class diff():
 
             shutil.rmtree(test_dir)
         else:
-            ph.err(f"Error, there is not file with name {self.__file1}")
+            ph.err(f"Error, there is no file with name {self.__file1}")
 
     def __get_file2(self):
         # Create a test directory to extract the last commit to
