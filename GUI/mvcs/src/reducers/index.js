@@ -32,6 +32,7 @@ import {
     commit,
     modify_commit,
     delete_commit,
+    commit_file_tree,
 } from "./commits";
 
 import message from "./message";
@@ -64,6 +65,7 @@ export default combineReducers({
     commit,
     modify_commit,
     delete_commit,
+    commit_file_tree,
     // Message
     message,
 });

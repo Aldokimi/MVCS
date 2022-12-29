@@ -14,7 +14,7 @@ schema_view = get_schema_view(
         default_version='v1',
         terms_of_service="https://www.google.com/policies/terms/",
         contact=openapi.Contact(email="contact@snippets.local"),
-        license=openapi.License(name="BSD License"),
+        license=openapi.License(name="MIT License"),
     ),
     url="http://localhost:8000/api/v1/",
     public=True,
@@ -55,4 +55,5 @@ urlpatterns = [
 
     path('commits/', CommitViews.CommitList.as_view()),
     path('commits/<int:pk>/', CommitViews.CommitDetail.as_view()),
+    path('commits/<int:pk>/tree/', CommitViews.CommitTreeDetail.as_view())
 ]

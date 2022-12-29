@@ -7,10 +7,13 @@ import {
     MODIFY_COMMIT_FAIL,
     DELETE_COMMIT_SUCCESS,
     DELETE_COMMIT_FAIL,
+    GET_COMMIT_FILE_TREE_SUCCESS,
+    GET_COMMIT_FILE_TREE_FAIL,
 } from "../actions/types";
 
 const commits_initialState = { allCommitsProvided: false, commits: null };
 const commit_initialState = { oneCommitProvided: false, commit: null };
+const commit_file_tree_initialState = { commitFileTreeProvided: false, commit_file_tree: null };
 const modify_commit_initialState = { commitModified: false, modified_commit: null};
 const delete_commit_initialState = { commitDeleted: false};
 
@@ -49,6 +52,27 @@ const commit = (state = commit_initialState, action) => {
             return {
                 ...state,
                 oneCommitProvided: false,
+                commit: null,
+            };
+        default:
+            return state;
+    }
+}
+
+const commit_file_tree = (state = commit_file_tree_initialState, action) => {
+    const { type, payload } = action;
+
+    switch (type) {
+        case GET_COMMIT_FILE_TREE_SUCCESS:
+            return {
+                ...state,
+                commitFileTreeProvided: true,
+                commit_file_tree: payload.commit_file_tree
+            };
+        case GET_COMMIT_FILE_TREE_FAIL:
+            return {
+                ...state,
+                commitFileTreeProvided: false,
                 commit: null,
             };
         default:
@@ -102,4 +126,5 @@ export {
     commit,
     modify_commit,
     delete_commit,
+    commit_file_tree,
 };

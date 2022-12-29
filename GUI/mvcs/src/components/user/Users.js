@@ -92,7 +92,9 @@ const Users = () => {
                             <div className="row">
                               <div className="col-md-5">
                                 <img 
-                                src={user.profile_picture ? user.profile_picture : user_image } alt="none" width={100} height={100}/>
+                                src={
+                                  user.profile_picture ? user.profile_picture : user_image 
+                                } alt="none" width={100} height={100}/>
                               </div>
                               <div className="col-md-4">
                                 <p>
