@@ -37,6 +37,10 @@ const getCommit = (id) => {
   return axios.get(API_URL + `commits/${id}/`, { headers: authHeader() });
 }
 
+const getCommitFileTree = (id) => {
+  return axios.get(API_URL + `commits/${id}/tree/`, { headers: authHeader() });
+}
+
 const getReposForUser = (id) => {
   return axios.get(API_URL + `users/${id}/repos`, { headers: authHeader() });
 }
@@ -50,11 +54,11 @@ const getCommitsForUser = (id) => {
 }
 // POST requests
 const createRepository = (data) => {
-  return axios.post(API_URL + "repos/", data,  { headers: authHeader() });
+  return axios.post(API_URL + "repos/", data, { headers: authHeader() });
 }
 
 const createBranch = (data) => {
-  return axios.post(API_URL + "repos/", data,  { headers: authHeader() });
+  return axios.post(API_URL + "repos/", data, { headers: authHeader() });
 }
 
 // PUT requests
@@ -114,5 +118,6 @@ export default {
   deleteUser,
   deleteRepository,
   deleteBranch,
-  deleteCommit
+  deleteCommit,
+  getCommitFileTree
 };

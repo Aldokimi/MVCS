@@ -1,4 +1,7 @@
 import os
+import json
+import shutil
+import tarfile
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -133,3 +136,44 @@ class CommitDetail(APIView):
             pass
         commit.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class CommitTreeDetail(APIView):
+    """
+    Get teh file tree of a commit.
+    """
+
+    def get_object(self, pk):
+        try:
+            return Commit.objects.get(pk=pk)
+        except Commit.DoesNotExist:
+            raise Http404
+
+    def path_to_dict(self, path):
+        d = {'name': os.path.basename(path)}
+        if os.path.isdir(path):
+            d['type'] = "directory"
+            d['children'] = [self.path_to_dict(os.path.join(path,x)) for x in os.listdir(path)]
+        else:
+            d['type'] = "file"
+        return d
+
+    def get(self, request, pk, format=None):
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated()
+        commit = self.get_object(pk)
+        user_path = os.path.join("/home/mvcs/", f"{commit.branch.repo.owner.username}")
+        repo_path = os.path.join(user_path, f"{commit.branch.repo.name}")
+        branch_path = os.path.join(repo_path, f"{commit.branch.name}")
+        commit_file = os.path.join(branch_path, f"{commit.unique_id}.tar.xz")
+        working_dir = os.path.join(branch_path, "test")
+        os.mkdir(working_dir)
+        try:
+            with tarfile.open(commit_file) as ccf:
+                ccf.extractall(working_dir)
+        except Exception as e:
+            raise Exception(e)
+        print(working_dir)
+        data = self.path_to_dict(working_dir)
+        shutil.rmtree(working_dir)
+        data["name"] = commit.branch.repo.name
+        return Response(data)

@@ -7,6 +7,8 @@ import {
     MODIFY_COMMIT_FAIL,
     DELETE_COMMIT_SUCCESS,
     DELETE_COMMIT_FAIL,
+    GET_COMMIT_FILE_TREE_SUCCESS,
+    GET_COMMIT_FILE_TREE_FAIL,
 } from "./types";
 
 import APIService from "../services/api.service";
@@ -48,6 +50,29 @@ export const getCommit = (id) => (dispatch) => {
 
             dispatch({
                 type: GET_COMMIT_FAIL,
+                payload: message,
+            });
+
+            return Promise.reject();
+        }
+    )
+}
+
+export const getCommitFileTree = (id) => (dispatch) => {
+    return APIService.getCommitFileTree(id).then(
+        (response) => {
+            dispatch({
+                type: GET_COMMIT_FILE_TREE_SUCCESS,
+                payload: { commit_file_tree: response },
+            });
+
+            return Promise.resolve();
+        },
+        (error) => {
+            const message = (error.response && error.response.data) || error.message || error.toString();
+
+            dispatch({
+                type: GET_COMMIT_FILE_TREE_FAIL,
                 payload: message,
             });
 
