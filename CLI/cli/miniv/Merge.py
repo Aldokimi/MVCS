@@ -103,7 +103,7 @@ class merge():
                 self.__config_folder, f"{unique_test_name}_new")
             os.mkdir(new_directory, 0o777)
             for new_file in new_files:
-                file_to_move = os.path.join(test_dir, new_file)
+                file_to_move = os.path.join(test_dir, new_file[1:])
                 new_dir = ""
                 new_files_path_list = os.path.normpath(file_to_move)
                 new_files_path_list = new_files_path_list.split(os.sep)
