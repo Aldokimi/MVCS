@@ -45,7 +45,7 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=500)),
                 ('date_created', models.DateTimeField(default=django.utils.timezone.now, verbose_name='date created')),
                 ('has_locked_files', models.BooleanField(default=False)),
-                ('locked_files', django_mysql.models.ListTextField(models.IntegerField(), null=True, size=100)),
+                ('locked_files', models.TextField(blank=True, default='')),
             ],
         ),
         migrations.CreateModel(

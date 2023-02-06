@@ -110,11 +110,7 @@ class Branch(models.Model):
     date_created = models.DateTimeField(
         verbose_name="date created", default=timezone.now)
     has_locked_files = models.BooleanField(default=False)
-    locked_files = ListTextField(
-        base_field=IntegerField(),
-        size=100,
-        null=True,
-    )
+    locked_files = models.TextField(blank=True, null=True, max_length=2000)
 
 
 class Commit(models.Model):
